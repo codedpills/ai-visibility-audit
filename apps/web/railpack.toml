@@ -1,8 +1,11 @@
 [phases.install]
+packageManager = "pnpm"
 cmds = ["pnpm install --frozen-lockfile"]
 
 [phases.build]
+packageManager = "pnpm"
 cmds = ["pnpm --filter '@repo/web' build"]
 
 [start]
+packageManager = "pnpm"
 cmd = "npx serve -s apps/web/dist -l ${PORT:-3001}"
