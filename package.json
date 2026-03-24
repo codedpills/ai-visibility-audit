@@ -1,0 +1,17 @@
+{
+  "name": "ai-visibility-audit",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter './apps/*' --parallel dev",
+    "lint": "pnpm --recursive --if-present lint",
+    "lint-staged": "lint-staged",
+    "typecheck": "pnpm --recursive --if-present typecheck",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "prettier": "^3.8.1",
+    "typescript": "^5.7.0"
+  }
+}
