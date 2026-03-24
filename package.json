@@ -1,6 +1,7 @@
 {
   "name": "ai-visibility-audit",
   "private": true,
+  "packageManager": "pnpm@9.15.9",
   "scripts": {
     "dev": "pnpm --filter './apps/*' --parallel dev",
     "lint": "pnpm --recursive --if-present lint",
