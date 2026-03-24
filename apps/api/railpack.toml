@@ -1,6 +1,6 @@
 [phases.install]
 packageManager = "pnpm"
-cmds = ["pnpm install --frozen-lockfile"]
+cmds = ["pnpm install --no-frozen-lockfile"]
 
 [phases.build]
 packageManager = "pnpm"
