@@ -1,0 +1,6 @@
+[build]
+builder = "railpack"
+buildCommand = "pnpm install --no-frozen-lockfile && pnpm --filter '@repo/web' build"
+
+[deploy]
+startCommand = "npx serve -s apps/web/dist -l $PORT"

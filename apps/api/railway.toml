@@ -1,0 +1,6 @@
+[build]
+builder = "railpack"
+buildCommand = "pnpm install --no-frozen-lockfile && pnpm --filter '@repo/api' build"
+
+[deploy]
+startCommand = "pnpm --filter '@repo/api' start"
