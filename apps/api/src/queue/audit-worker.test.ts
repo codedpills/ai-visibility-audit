@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { processAuditJob } from './audit-worker.js';
+import { processAuditJob } from './audit-worker';
 import type { AuditJobData } from './audit-queue.js';
 
 // --- Mocks ---

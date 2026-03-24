@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { analyzeAiAnswerability } from './ai-answerability.js';
-import type { OpenAiClient } from './ai-answerability.js';
+import { analyzeAiAnswerability } from './ai-answerability';
+import type { OpenAiClient } from './ai-answerability';
 import { makePage, makeCrawlResult } from './test-helpers.js';
 
 function makeClient(content: string): OpenAiClient {

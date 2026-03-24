@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { analyzeAiCrawlability } from './ai-crawlability.js';
+import { analyzeAiCrawlability } from './ai-crawlability';
 import { makeCrawlResult } from './test-helpers.js';
 
 describe('analyzeAiCrawlability', () => {

@@ -1,0 +1,8 @@
+[phases.install]
+cmds = ["pnpm install --frozen-lockfile"]
+
+[phases.build]
+cmds = ["pnpm --filter '@repo/api' build"]
+
+[start]
+cmd = "pnpm --filter '@repo/api' start"
