@@ -8,6 +8,11 @@
     "typecheck": "pnpm --recursive --if-present typecheck",
     "prepare": "husky"
   },
+  "pnpm": {
+    "overrides": {
+      "ioredis": "^5.10.1"
+    }
+  },
   "devDependencies": {
     "husky": "^9.1.7",
     "lint-staged": "^15.5.2",
