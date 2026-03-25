@@ -9,12 +9,14 @@ export function createEmailService(
   baseUrl: string
 ): EmailService {
   const resend = new Resend(apiKey);
+  const fromEmail = process.env.FROM_EMAIL ?? 'onboarding@resend.dev';
+  const from = `AI Visibility Audit <${fromEmail}>`;
 
   return {
     async sendConfirmationEmail(email: string, auditId: string) {
       const resultsUrl = `${baseUrl}/audits/${auditId}/results`;
-      await resend.emails.send({
-        from: 'AI Visibility Audit <noreply@aivisibilityaudit.com>',
+      const { error } = await resend.emails.send({
+        from,
         to: email,
         subject: 'Your AI Visibility Audit Results',
         html: `
@@ -26,6 +28,9 @@ export function createEmailService(
           <p><small>Upgrade to Pro for permanent access and PDF reports.</small></p>
         `,
       });
+      if (error) {
+        throw new Error(error.message);
+      }
     },
   };
 }
