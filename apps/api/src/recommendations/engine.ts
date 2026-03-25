@@ -75,21 +75,33 @@ function getPriority(score: number, maxScore: number): RecommendationPriority {
 }
 
 export function generateRecommendations(findings: Finding[]): Recommendation[] {
-  const recs: Recommendation[] = findings
-    .filter((f) => f.score < f.maxScore)
-    .map((f) => {
-      const priority = getPriority(f.score, f.maxScore);
-      const rec: Recommendation = {
-        priority,
-        category: f.category,
-        title: TITLES[f.category],
-        description: DESCRIPTIONS[f.category],
-      };
-      if (priority === 'critical' && SNIPPETS[f.category]) {
-        rec.snippet = SNIPPETS[f.category];
-      }
-      return rec;
-    });
+  // Build one recommendation per category, keeping the worst-scoring finding
+  const worst = new Map<AuditCategory, Finding>();
+  for (const f of findings) {
+    if (f.score >= f.maxScore) continue;
+    const prev = worst.get(f.category);
+    if (
+      !prev ||
+      PRIORITY_ORDER[getPriority(f.score, f.maxScore)] <
+        PRIORITY_ORDER[getPriority(prev.score, prev.maxScore)]
+    ) {
+      worst.set(f.category, f);
+    }
+  }
+
+  const recs: Recommendation[] = Array.from(worst.values()).map((f) => {
+    const priority = getPriority(f.score, f.maxScore);
+    const rec: Recommendation = {
+      priority,
+      category: f.category,
+      title: TITLES[f.category],
+      description: DESCRIPTIONS[f.category],
+    };
+    if (priority === 'critical' && SNIPPETS[f.category]) {
+      rec.snippet = SNIPPETS[f.category];
+    }
+    return rec;
+  });
 
   return recs.sort(
     (a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]

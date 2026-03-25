@@ -42,9 +42,9 @@ describe('generateRecommendations', () => {
 
   it('sorts recommendations critical → medium → low', () => {
     const findings = [
-      finding({ score: 3, maxScore: 5, signal: 'low signal' }), // low
-      finding({ score: 0, maxScore: 5, signal: 'critical signal' }), // critical
-      finding({ score: 1, maxScore: 5, signal: 'medium signal' }), // medium
+      finding({ category: 'content-clarity', score: 3, maxScore: 5 }), // low
+      finding({ category: 'entity-definition', score: 0, maxScore: 5 }), // critical
+      finding({ category: 'topic-authority', score: 1, maxScore: 5 }), // medium
     ];
     const recs = generateRecommendations(findings);
     expect(recs.map((r) => r.priority)).toEqual(['critical', 'medium', 'low']);
@@ -75,5 +75,32 @@ describe('generateRecommendations', () => {
     expect(rec.title).toBeTruthy();
     expect(rec.description).toBeTruthy();
     expect(rec.category).toBe('entity-definition');
+  });
+
+  it('deduplicates recommendations by category, keeping the highest priority', () => {
+    const findings = [
+      finding({
+        category: 'entity-definition',
+        score: 0,
+        maxScore: 15,
+        signal: 'signal-a',
+      }),
+      finding({
+        category: 'entity-definition',
+        score: 3,
+        maxScore: 15,
+        signal: 'signal-b',
+      }),
+      finding({
+        category: 'entity-definition',
+        score: 0,
+        maxScore: 15,
+        signal: 'signal-c',
+      }),
+    ];
+    const recs = generateRecommendations(findings);
+    const entityRecs = recs.filter((r) => r.category === 'entity-definition');
+    expect(entityRecs).toHaveLength(1);
+    expect(entityRecs[0].priority).toBe('critical');
   });
 });
