@@ -95,21 +95,63 @@ function ScoreRing({ score, max }: { score: number; max: number }) {
   );
 }
 
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  'entity-definition':
+    'AI systems need to know who you are before they can recommend you. This checks whether your site clearly defines your brand identity through structured schema markup (Organization, Person, etc.), an About page, and entity-rich content. Without this, AI models may misidentify or omit you entirely.',
+  'content-clarity':
+    'AI models extract and cite content they can parse quickly. This checks for bullet lists, FAQ sections, plain-language summaries, and short paragraphs — the formats AI systems favour when constructing answers. Dense walls of text are often skipped.',
+  'topic-authority':
+    'To be recommended by AI, your site needs to be seen as the go-to source on your topic. This measures depth of coverage across related subjects, internal linking, and inbound authority signals. Shallow or scattered content rarely earns citations.',
+  'semantic-structure':
+    'HTML structure tells AI crawlers how to interpret your document. A single H1, question-phrased H2 headings, and short paragraphs make it far easier for models to extract the right answer from the right section. Poor structure leads to misattribution.',
+  'structured-data':
+    'JSON-LD markup is a direct channel to AI understanding. It labels your content explicitly — "this is a FAQ", "this is a product", "this organisation does X" — without requiring the model to infer it. Missing structured data is one of the most fixable gaps on most sites.',
+  'ai-crawlability':
+    'AI training and retrieval systems need permission to access your site. This checks whether your robots.txt allows major AI crawlers (GPTBot, ClaudeBot, Google-Extended) and whether you have an llms.txt file summarising your site for AI agents.',
+  'brand-authority':
+    'AI models learn who to trust from external signals — Wikipedia mentions, industry publication coverage, and brand co-citations. A site that is only known to itself rarely surfaces in AI-generated recommendations or answers.',
+  'ai-answerability':
+    'The clearest predictor of AI citation is whether your content directly answers the questions your audience asks. This checks for concise, factual, question-answering language on your site. Vague or promotional copy is the least likely to be quoted by an AI.',
+};
+
 function CategoryCard({ cs }: { cs: CategoryScoreResponse }) {
+  const [open, setOpen] = useState(false);
   const pct = Math.round((cs.score / cs.maxScore) * 100);
   const color = scoreColor(cs.score, cs.maxScore);
+  const description = CATEGORY_DESCRIPTIONS[cs.category];
+
   return (
     <div style={s.catCard}>
-      <div style={s.catHeader}>
-        <span style={s.catLabel}>{cs.label}</span>
-        <span style={{ ...s.catScore, color }}>
-          {cs.score}
-          <span style={s.catMax}>/{cs.maxScore}</span>
-        </span>
-      </div>
-      <div style={s.barTrack}>
-        <div style={{ ...s.barFill, width: `${pct}%`, background: color }} />
-      </div>
+      {/* Clickable header row */}
+      <button
+        style={s.catButton}
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+      >
+        <div style={s.catHeaderInner}>
+          <span style={s.catLabel}>{cs.label}</span>
+          <div style={s.catRight}>
+            <span style={{ ...s.catScore, color }}>
+              {cs.score}
+              <span style={s.catMax}>/{cs.maxScore}</span>
+            </span>
+            <span
+              style={{
+                ...s.catChevron,
+                transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            >
+              ▾
+            </span>
+          </div>
+        </div>
+        <div style={s.barTrack}>
+          <div style={{ ...s.barFill, width: `${pct}%`, background: color }} />
+        </div>
+      </button>
+
+      {/* Accordion body */}
+      {open && description && <p style={s.catDescription}>{description}</p>}
     </div>
   );
 }
@@ -442,16 +484,36 @@ const s = {
     gap: '0.75rem',
   },
   catCard: {
-    padding: '1rem 1.25rem',
     background: colors.bgCard,
     borderRadius: radius.md,
     border: `1px solid ${colors.border}`,
+    overflow: 'hidden',
   },
-  catHeader: {
+  catButton: {
+    width: '100%',
+    background: 'none',
+    border: 'none',
+    padding: '1rem 1.25rem',
+    cursor: 'pointer',
+    textAlign: 'left' as const,
+    color: colors.text,
+  },
+  catHeaderInner: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'baseline',
     marginBottom: '0.625rem',
+  },
+  catRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.625rem',
+  },
+  catChevron: {
+    fontSize: '0.9rem',
+    color: colors.textMuted,
+    transition: 'transform 0.2s ease',
+    display: 'inline-block',
   },
   catLabel: {
     fontSize: '0.95rem',
@@ -466,6 +528,15 @@ const s = {
     fontSize: '0.75rem',
     color: colors.textMuted,
     fontWeight: 400,
+  },
+  catDescription: {
+    fontSize: '0.875rem',
+    color: colors.textMuted,
+    lineHeight: 1.6,
+    padding: '0 1.25rem 1rem',
+    margin: 0,
+    borderTop: `1px solid ${colors.border}`,
+    paddingTop: '0.875rem',
   },
   barTrack: {
     height: '6px',
