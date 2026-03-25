@@ -1,4 +1,16 @@
-const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+const _rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+// Guard: if the value doesn't start with http(s)://, treat it as misconfigured
+// and fall back to localhost so the error is obvious in dev, not a silent relative-path bug.
+const API_BASE =
+  _rawApiUrl.startsWith('http://') || _rawApiUrl.startsWith('https://')
+    ? _rawApiUrl.replace(/\/$/, '') // strip trailing slash
+    : 'http://localhost:3000';
+
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL?.startsWith('http')) {
+  console.error(
+    '[api/client] VITE_API_URL is not set or missing protocol — API calls will fail. Set VITE_API_URL=https://<your-api-domain> as a build-time env var in Railway.'
+  );
+}
 
 export interface AuditResponse {
   id: string;
