@@ -1,4 +1,15 @@
-const _rawApiUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
+declare global {
+  interface Window {
+    __ENV__?: { API_URL?: string };
+  }
+}
+
+// Runtime config (injected via /env-config.js at container start) takes precedence
+// over the build-time VITE_API_URL so Railway env var changes never require a rebuild.
+const _rawApiUrl =
+  window.__ENV__?.API_URL ??
+  import.meta.env.VITE_API_URL ??
+  'http://localhost:3000';
 // Guard: if the value doesn't start with http(s)://, treat it as misconfigured
 // and fall back to localhost so the error is obvious in dev, not a silent relative-path bug.
 const API_BASE =
@@ -6,9 +17,9 @@ const API_BASE =
     ? _rawApiUrl.replace(/\/$/, '') // strip trailing slash
     : 'http://localhost:3000';
 
-if (import.meta.env.PROD && !import.meta.env.VITE_API_URL?.startsWith('http')) {
+if (import.meta.env.PROD && !_rawApiUrl.startsWith('http')) {
   console.error(
-    '[api/client] VITE_API_URL is not set or missing protocol — API calls will fail. Set VITE_API_URL=https://<your-api-domain> as a build-time env var in Railway.'
+    '[api/client] API_URL is not set or missing protocol — API calls will fail. Set API_URL in Railway web service Variables.'
   );
 }
 

@@ -3,4 +3,4 @@ builder = "railpack"
 buildCommand = "pnpm install --no-frozen-lockfile && pnpm --filter '@repo/web' build"
 
 [deploy]
-startCommand = "npx serve -s apps/web/dist -l $PORT"
+startCommand = "echo \"window.__ENV__ = { API_URL: '${API_URL}' };\" > apps/web/dist/env-config.js && npx serve -s apps/web/dist -l $PORT"
