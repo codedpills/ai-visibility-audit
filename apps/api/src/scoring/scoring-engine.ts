@@ -10,6 +10,7 @@ import { analyzeAiCrawlability } from '../analyzers/ai-crawlability.js';
 import { analyzeBrandAuthority } from '../analyzers/brand-authority.js';
 import { analyzeAiAnswerability } from '../analyzers/ai-answerability.js';
 import type { OpenAiClient } from '../analyzers/ai-answerability.js';
+import { generateRecommendations } from '../recommendations/engine.js';
 
 const CATEGORY_LABELS: Record<string, string> = {
   'entity-definition': 'Entity Definition',
@@ -76,6 +77,6 @@ export async function runAudit(
     maxScore: 100,
     categoryScores,
     findings,
-    recommendations: [],
+    recommendations: generateRecommendations(findings),
   };
 }

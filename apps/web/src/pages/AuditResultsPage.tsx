@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getAudit } from '../api/client';
-import type { AuditResponse, CategoryScoreResponse } from '../api/client';
+import { getAudit, submitEmail } from '../api/client';
+import type {
+  AuditResponse,
+  CategoryScoreResponse,
+  RecommendationResponse,
+} from '../api/client';
 import { colors, fonts, radius } from '../design/tokens';
 
 function scoreColor(score: number, max: number): string {
@@ -110,10 +114,129 @@ function CategoryCard({ cs }: { cs: CategoryScoreResponse }) {
   );
 }
 
+const PRIORITY_COLOR: Record<string, string> = {
+  critical: '#ef4444',
+  medium: '#f59e0b',
+  low: '#22c55e',
+};
+
+function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={s.recCard}>
+      <div style={s.recHeader}>
+        <span
+          style={{
+            ...s.recBadge,
+            background: PRIORITY_COLOR[rec.priority] + '22',
+            color: PRIORITY_COLOR[rec.priority],
+          }}
+        >
+          {rec.priority}
+        </span>
+        <strong style={s.recTitle}>{rec.title}</strong>
+      </div>
+      <p style={s.recDesc}>{rec.description}</p>
+      {rec.snippet && (
+        <>
+          <button style={s.snippetToggle} onClick={() => setOpen((v) => !v)}>
+            {open ? 'Hide snippet ↑' : 'Show code snippet ↓'}
+          </button>
+          {open && <pre style={s.snippet}>{rec.snippet}</pre>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function EmailGate({
+  auditId,
+  onUnlock,
+}: {
+  auditId: string;
+  onUnlock: (recs: RecommendationResponse[]) => void;
+}) {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const data = await submitEmail(auditId, email);
+      onUnlock(data.recommendations);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={s.gate}>
+      <h3 style={s.gateTitle}>Unlock Full Recommendations</h3>
+      <p style={s.gateDesc}>
+        Enter your email to see the complete prioritised recommendation list —
+        free, no spam.
+      </p>
+      <form onSubmit={handleSubmit} style={s.gateForm}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@example.com"
+          required
+          style={s.gateInput}
+        />
+        <button type="submit" disabled={loading} style={s.gateButton}>
+          {loading ? 'Sending…' : 'Get Full Report →'}
+        </button>
+      </form>
+      {error && (
+        <p
+          style={{
+            color: colors.error,
+            marginTop: '0.5rem',
+            fontSize: '0.875rem',
+          }}
+        >
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ExpiryBanner({ expiresAt }: { expiresAt: string }) {
+  const days = Math.max(
+    0,
+    Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 86_400_000)
+  );
+  const urgent = days <= 1;
+  return (
+    <div
+      style={{
+        ...s.expiryBanner,
+        borderColor: urgent ? '#ef4444' : colors.border,
+        color: urgent ? '#ef4444' : colors.textMuted,
+      }}
+    >
+      {days === 0
+        ? 'Your audit expires today.'
+        : `Your audit results expire in ${days} day${days === 1 ? '' : 's'}.`}
+    </div>
+  );
+}
+
 export function AuditResultsPage() {
   const { id } = useParams<{ id: string }>();
   const [audit, setAudit] = useState<AuditResponse | null>(null);
   const [error, setError] = useState('');
+  const [unlockedRecs, setUnlockedRecs] = useState<
+    RecommendationResponse[] | null
+  >(null);
 
   useEffect(() => {
     if (!id) return;
@@ -157,10 +280,18 @@ export function AuditResultsPage() {
   const geoScore = audit.geoScore ?? 0;
   const grade = scoreGrade(geoScore);
   const catScores = audit.categoryScores ?? [];
+  const allRecs = unlockedRecs ?? audit.recommendations ?? [];
+  const previewRecs = allRecs
+    .filter((r) => r.priority === 'critical')
+    .slice(0, 3);
+  const isUnlocked = unlockedRecs !== null;
 
   return (
     <main style={s.root}>
       <div style={s.container}>
+        {/* Expiry banner */}
+        {audit.expiresAt && <ExpiryBanner expiresAt={audit.expiresAt} />}
+
         {/* Header */}
         <div style={s.header}>
           <Link to="/" style={s.link}>
@@ -199,15 +330,28 @@ export function AuditResultsPage() {
           </div>
         </section>
 
-        {/* Footer CTA */}
-        <div style={s.footer}>
-          <p style={s.footerText}>
-            Want detailed recommendations and a PDF report?
-          </p>
-          <button style={s.ctaButton} disabled>
-            Unlock Full Report (coming soon)
-          </button>
-        </div>
+        {/* Recommendations */}
+        <section style={s.section}>
+          <h2 style={s.sectionTitle}>
+            {isUnlocked ? 'All Recommendations' : 'Top Critical Issues'}
+          </h2>
+
+          {previewRecs.length === 0 && !isUnlocked && (
+            <p style={{ color: colors.textMuted, fontSize: '0.95rem' }}>
+              No critical issues found — great work!
+            </p>
+          )}
+
+          <div style={s.catGrid}>
+            {(isUnlocked ? allRecs : previewRecs).map((rec, i) => (
+              <RecommendationCard key={i} rec={rec} />
+            ))}
+          </div>
+
+          {!isUnlocked && id && (
+            <EmailGate auditId={id} onUnlock={setUnlockedRecs} />
+          )}
+        </section>
       </div>
     </main>
   );
@@ -334,27 +478,117 @@ const s = {
     borderRadius: '3px',
     transition: 'width 0.6s ease',
   },
-  footer: {
-    textAlign: 'center' as const,
-    padding: '2rem',
+  // Recommendation cards
+  recCard: {
+    padding: '1rem 1.25rem',
     background: colors.bgCard,
-    borderRadius: radius.lg,
+    borderRadius: radius.md,
     border: `1px solid ${colors.border}`,
   },
-  footerText: {
-    color: colors.textMuted,
-    marginBottom: '1rem',
+  recHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
+    marginBottom: '0.5rem',
   },
-  ctaButton: {
-    padding: '0.875rem 2rem',
+  recBadge: {
+    fontSize: '0.7rem',
+    fontWeight: 700,
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.06em',
+    padding: '0.2rem 0.5rem',
+    borderRadius: '4px',
+    flexShrink: 0,
+  },
+  recTitle: {
+    fontSize: '0.95rem',
+    fontWeight: 600,
+    color: colors.text,
+  },
+  recDesc: {
+    fontSize: '0.875rem',
+    color: colors.textMuted,
+    lineHeight: 1.55,
+    marginBottom: '0.5rem',
+  },
+  snippetToggle: {
+    background: 'none',
+    border: 'none',
+    color: colors.secondary,
+    cursor: 'pointer',
+    fontSize: '0.8rem',
+    padding: 0,
+    marginBottom: '0.5rem',
+  },
+  snippet: {
+    background: '#0d0d0d',
+    border: `1px solid ${colors.border}`,
+    borderRadius: '6px',
+    padding: '0.875rem 1rem',
+    fontSize: '0.78rem',
+    color: '#c9fafe',
+    overflowX: 'auto' as const,
+    lineHeight: 1.6,
+    whiteSpace: 'pre' as const,
+  },
+  // Email gate
+  gate: {
+    marginTop: '1.5rem',
+    padding: '1.5rem',
+    background: colors.bgCard,
+    borderRadius: radius.lg,
+    border: `1px solid ${colors.borderAccent}`,
+    textAlign: 'center' as const,
+  },
+  gateTitle: {
+    fontFamily: fonts.heading,
+    fontSize: '1.1rem',
+    fontWeight: 700,
+    marginBottom: '0.5rem',
+  },
+  gateDesc: {
+    color: colors.textMuted,
+    fontSize: '0.9rem',
+    marginBottom: '1.25rem',
+  },
+  gateForm: {
+    display: 'flex',
+    gap: '0.5rem',
+    justifyContent: 'center',
+    flexWrap: 'wrap' as const,
+  },
+  gateInput: {
+    flex: '1 1 220px',
+    padding: '0.75rem 1rem',
+    borderRadius: '8px',
+    border: `1px solid ${colors.border}`,
+    background: '#1a1a1a',
+    color: colors.text,
+    fontSize: '0.95rem',
+    outline: 'none',
+  },
+  gateButton: {
+    padding: '0.75rem 1.5rem',
     borderRadius: '8px',
     border: 'none',
-    background: colors.gradientButton,
+    background: colors.primary,
     color: colors.text,
-    fontFamily: fonts.body,
     fontWeight: 600,
-    fontSize: '1rem',
-    cursor: 'not-allowed',
-    opacity: 0.5,
+    fontSize: '0.95rem',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
   },
+  // Expiry banner
+  expiryBanner: {
+    padding: '0.625rem 1rem',
+    borderRadius: radius.md,
+    border: '1px solid',
+    fontSize: '0.85rem',
+    textAlign: 'center' as const,
+    marginBottom: '1.25rem',
+  },
+  // Legacy (kept to avoid breaking anything)
+  footer: { display: 'none' },
+  footerText: { display: 'none' },
+  ctaButton: { display: 'none' },
 } as const;

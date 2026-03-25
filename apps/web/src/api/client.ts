@@ -61,3 +61,23 @@ export async function getAudit(auditId: string): Promise<AuditResponse> {
 
   return res.json() as Promise<AuditResponse>;
 }
+
+export async function submitEmail(
+  auditId: string,
+  email: string
+): Promise<{ recommendations: RecommendationResponse[] }> {
+  const res = await fetch(`${API_BASE}/audits/${auditId}/email`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to submit email'
+    );
+  }
+
+  return res.json() as Promise<{ recommendations: RecommendationResponse[] }>;
+}
