@@ -11,6 +11,7 @@ async function buildApp() {
   app.register(auditsRoute, {
     enqueueAudit: mockEnqueueAudit,
     getAudit: mockGetAudit,
+    jwtSecret: 'test-secret',
   });
   await app.ready();
   return app;
@@ -64,7 +65,7 @@ describe('POST /audits', () => {
       url: '/audits',
       payload: { url: 'https://acme.com' },
     });
-    expect(mockEnqueueAudit).toHaveBeenCalledWith('https://acme.com');
+    expect(mockEnqueueAudit).toHaveBeenCalledWith('https://acme.com', null);
   });
 });
 

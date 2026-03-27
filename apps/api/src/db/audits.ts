@@ -4,10 +4,17 @@ import type { ScoringResult } from '../scoring/types.js';
 import type { AuditStatus } from '@repo/shared';
 import { addDays } from '../utils/date.js';
 
+const ANON_RETENTION_DAYS = 7;
+const REGISTERED_RETENTION_DAYS = 30;
+
 export async function createAuditRecord(
   db: Kysely<Database>,
-  url: string
+  url: string,
+  userId?: string | null
 ): Promise<string> {
+  const retentionDays = userId
+    ? REGISTERED_RETENTION_DAYS
+    : ANON_RETENTION_DAYS;
   const result = await db
     .insertInto('audits')
     .values({
@@ -18,8 +25,8 @@ export async function createAuditRecord(
       category_scores: null,
       findings: null,
       recommendations: null,
-      expires_at: addDays(new Date(), 7),
-      user_id: null,
+      expires_at: addDays(new Date(), retentionDays),
+      user_id: userId ?? null,
     })
     .returning('id')
     .executeTakeFirstOrThrow();

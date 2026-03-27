@@ -4,7 +4,12 @@ import type { CategoryScore, Finding, Recommendation } from '@repo/shared';
 export interface UsersTable {
   id: Generated<string>;
   email: string;
-  password_hash: string;
+  magic_link_token_hash: string | null;
+  magic_link_expires_at: Date | null;
+  audits_this_month: number;
+  month_reset_at: Date;
+  donated: boolean;
+  donation_points: number;
   plan: 'free' | 'pro';
   created_at: Generated<Date>;
 }

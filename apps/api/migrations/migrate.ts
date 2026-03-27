@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { Kysely, Migrator, PostgresDialect } from 'kysely';
 import { Pool } from 'pg';
 import * as migration_001 from './2026_001_initial';
+import * as migration_002 from './2026_002_users_auth_and_limits';
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -21,6 +22,7 @@ async function main() {
       async getMigrations() {
         return {
           '2026_001_initial': migration_001,
+          '2026_002_users_auth_and_limits': migration_002,
         };
       },
     },

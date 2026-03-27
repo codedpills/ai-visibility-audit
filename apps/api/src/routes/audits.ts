@@ -1,3 +1,4 @@
+import { jwtVerify } from 'jose';
 import type { FastifyPluginAsync } from 'fastify';
 
 export interface AuditRowResponse {
@@ -14,8 +15,9 @@ export interface AuditRowResponse {
 }
 
 export interface AuditRouteDeps {
-  enqueueAudit: (url: string) => Promise<string>;
+  enqueueAudit: (url: string, userId?: string | null) => Promise<string>;
   getAudit: (id: string) => Promise<AuditRowResponse | null>;
+  jwtSecret: string;
 }
 
 const URL_RE = /^https?:\/\/.+\..+/;
@@ -24,7 +26,8 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
   fastify,
   opts
 ) => {
-  const { enqueueAudit, getAudit } = opts;
+  const { enqueueAudit, getAudit, jwtSecret } = opts;
+  const secretKey = new TextEncoder().encode(jwtSecret);
 
   fastify.post<{ Body: { url?: string } }>(
     '/audits',
@@ -37,7 +40,19 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
           .send({ error: 'A valid http/https url is required.' });
       }
 
-      const auditId = await enqueueAudit(url);
+      // Optionally resolve the logged-in user for extended retention.
+      let userId: string | null = null;
+      const token = request.cookies?.['session'];
+      if (token) {
+        try {
+          const { payload } = await jwtVerify(token, secretKey);
+          userId = (payload as { sub?: string }).sub ?? null;
+        } catch {
+          // Invalid/expired token — treat as anonymous
+        }
+      }
+
+      const auditId = await enqueueAudit(url, userId);
       return reply.status(201).send({ auditId, status: 'pending' });
     }
   );

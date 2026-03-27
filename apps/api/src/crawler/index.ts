@@ -80,7 +80,7 @@ async function fetchText(url: string): Promise<string | null> {
   try {
     const response = await got(url, {
       timeout: { request: PLAIN_FETCH_TIMEOUT_MS },
-      headers: { 'User-Agent': 'LLMRankBot/1.0' },
+      headers: { 'User-Agent': 'AIVisibilityAuditBot/1.0' },
       throwHttpErrors: false,
     });
     return response.statusCode < 400 ? response.body : null;

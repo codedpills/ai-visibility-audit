@@ -1,6 +1,7 @@
 # PRD: AI Visibility Audit Tool
 
-> **Working title:** LLMRank _(subject to change once a final name is chosen)_
+> **Product name:** AI Visibility Audit
+> **Domain:** aivisibilityaudit.cc
 > **Date:** March 2026
 
 ---
@@ -15,17 +16,22 @@ Today no dedicated tool exists to measure or improve a company's AI search visib
 
 ## Solution
 
-LLMRank is a web-based audit tool that:
+**AI Visibility Audit** is a free web-based audit tool that:
 
 1. Accepts a company URL and crawls up to 10 pages
 2. Runs a multi-signal static analysis across 8 LLM-readiness categories producing a **GEO Score out of 100**
-3. Optionally sends live prompts to GPT, Claude, and Gemini (Pro users) and tracks brand mention rates
-4. Produces a **GEO Score (0–100)** representing overall AI visibility readiness
-5. Surfaces a prioritised list of actionable fixes (Critical / Medium / Low)
-6. Generates a branded **PDF report** for Pro users with score breakdown, recommendations, and "fix-this" code snippets (e.g. schema.org JSON-LD)
-7. Enables **historical audit tracking** so Pro users can measure progress over time
+3. Produces a **GEO Score (0–100)** representing overall AI visibility readiness
+4. Surfaces a prioritised list of actionable fixes (Critical / Medium / Low) with code snippets
+5. Is **completely free** — no payment required, ever
 
-**Data retention:** Free-tier audit results are stored for **7 days** and permanently deleted after that period. Pro-tier results are retained indefinitely while the account is active. Users are informed of this at multiple touchpoints: the results page, the confirmation email, and a reminder email 1 day before expiry.
+**Access tiers:**
+
+- **Anonymous** — 1 audit/day (identified by IP + browser token); sees score, top 3 recommendations
+- **Registered (email)** — up to 3 audits/month (configurable), full recommendations, audit history, magic-link login
+
+**Monetisation:** Donation-based via Ko-fi. Users who donate are thanked and awarded points. Points may unlock reward features in future.
+
+**Data retention:** Audit results are stored for **7 days** for anonymous users and **30 days** for registered users. Users are informed at multiple touchpoints: the results page, the confirmation email, and a reminder email 1 day before expiry.
 
 ---
 
@@ -60,16 +66,11 @@ Marketing teams, SEO specialists, growth teams, agencies, product marketers.
 10. As a free user, I want to be clearly informed that my audit results will be deleted after 7 days, so that I know to either save key findings or upgrade before that period ends.
 11. As a free user, I want to receive an email reminder before my results expire, so that I have a chance to act on them or upgrade before they are deleted.
 
-### Results — Pro tier
+### Results — registered users
 
-12. As a Pro user, I want to download a professionally formatted PDF report, so that I can share findings with my marketing team or investors.
-13. As a Pro user, I want the PDF to include an executive summary and overall GEO score, so that non-technical stakeholders can understand the key takeaway immediately.
-14. As a Pro user, I want the PDF to include a score breakdown by each signal category, so that my team can prioritise which area to fix first.
-15. As a Pro user, I want the PDF to include a prioritised list of all recommendations labelled Critical / Medium / Low, so that implementation effort can be planned.
-16. As a Pro user, I want the PDF to include "fix this" code snippets (e.g. schema.org JSON-LD), so that my developer can copy-paste fixes directly.
-17. As a Pro user, I want to re-run my audit over time and see a history of my GEO scores, so that I can measure the impact of changes I make.
-18. As a Pro user, I want to run live LLM queries against ChatGPT, Claude, and Gemini to see how often my brand is mentioned, so that I get a real-world measurement of AI visibility beyond static signals.
-19. As a Pro user, I want to see which specific prompts triggered (or failed to trigger) a mention of my brand, so that I understand the contexts in which I am or am not visible.
+12. As a registered user, I want to see my full recommendations list with all priority levels and code snippets.
+13. As a registered user, I want a dashboard showing my past audits (within 7 days), so I can track progress over time.
+14. As a registered user, I want to see how many audits I have left this month and when my allowance resets, so I can plan accordingly.
 
 ### Scoring & signals
 
@@ -87,10 +88,17 @@ Marketing teams, SEO specialists, growth teams, agencies, product marketers.
 
 ### Accounts & access
 
-31. As a free user, I want to start an audit without creating an account or logging in.
-32. As a user, I want to provide my email to see my full results.
-33. As a Pro user, I want to create an account and log in to access my audit history and manage my subscription.
-34. As a Pro user, I want to manage billing from within the app.
+31. As an anonymous user, I want to start an audit without creating an account, so I can evaluate the tool immediately.
+32. As a user, I want to provide my email to unlock full recommendations and register my account in a single action.
+33. As a registered user, I want to receive a magic link by email to log in on subsequent visits, so I don't need a password.
+34. As a registered user, I want to see a counter of audits used this month and when it resets.
+35. As a user, I want to donate to support the tool via Ko-fi, so I can contribute if I find it valuable.
+
+### Rate limits
+
+36. As a registered user, I want to be clearly shown the monthly audit limit before I start, so I don't use it up unintentionally.
+37. When I reach my anonymous daily limit, I want to be prompted to register with my email to continue.
+38. When I reach my monthly limit as a registered user, I want to see clearly when it resets.
 
 ---
 
@@ -98,12 +106,14 @@ Marketing teams, SEO specialists, growth teams, agencies, product marketers.
 
 ### Tech stack
 
-- **Frontend:** React + Vite + TypeScript
+- **Frontend:** React + Vite + TypeScript (Vite SSG for homepage pre-render)
 - **Backend:** Node.js + Fastify + TypeScript
 - **Database:** PostgreSQL (audit results + user data)
-- **Queue:** Redis (async audit jobs)
-- **Email:** Resend (transactional emails)
-- **Payments:** Stripe (Pro plan gating)
+- **Queue:** Redis (async audit jobs + rate limit counters)
+- **Email:** Resend (transactional emails — magic links + results confirmations)
+- **Auth:** Magic link (email) + JWT session cookie; no passwords
+- **Donations:** Ko-fi (no platform fee); webhook records donor flag + points in DB
+- **Payments:** None (fully free product)
 
 ### Modules
 

@@ -7,27 +7,31 @@
 Durable decisions that apply across all phases:
 
 - **Monorepo layout:** `apps/web` (React + Vite + TypeScript), `apps/api` (Fastify + TypeScript), `packages/shared` (shared types)
+- **Business model:** Fully free. Monetisation via Ko-fi donations only.
+- **Access tiers:**
+  - Anonymous — 1 audit/day (IP SHA-256 + browser UUID token, two independent Redis keys)
+  - Registered — up to `MONTHLY_AUDIT_LIMIT` audits/month (env var, default 3), magic-link login, audit history
 - **Routes:**
   - `POST /audits` — submit URL, return `{ auditId }`
   - `GET /audits/:id` — poll status + results
-  - `POST /audits/:id/email` — submit email, unlock full results
-  - `POST /audits/:id/pdf` — generate PDF (Pro only)
-  - `GET /users/:id/audits` — audit history (Pro only)
-  - `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`
+  - `POST /audits/:id/email` — submit email, unlock full results, upsert user, send magic link
+  - `GET /users/me/audits` — audit history for authenticated user
+  - `POST /auth/magic-link` — send magic link email
+  - `GET /auth/verify` — validate token, issue JWT session cookie
+  - `GET /auth/me` — return current user + usage counters
+  - `POST /auth/logout` — clear session cookie
+  - `POST /webhooks/kofi` — Ko-fi donation webhook
 - **Schema (PostgreSQL):**
-  - `audits` — `id`, `url`, `status` (pending/running/done/failed), `tier` (free/pro), `geo_score`, `category_scores` (JSONB), `findings` (JSONB), `expires_at`, `user_id` (nullable), `created_at`
-  - `users` — `id`, `email`, `password_hash`, `plan` (free/pro), `created_at`
+  - `audits` — `id`, `url`, `status`, `tier`, `geo_score`, `category_scores` (JSONB), `findings` (JSONB), `recommendations` (JSONB), `expires_at`, `user_id` (nullable), `created_at`
+  - `users` — `id`, `email`, `magic_link_token_hash`, `magic_link_expires_at`, `audits_this_month`, `month_reset_at`, `donated`, `donation_points`, `plan` (dormant), `created_at`
   - `audit_emails` — `audit_id`, `email`, `created_at`
-- **Key models:**
-  - `Audit`, `AuditStatus`, `CategoryScore`, `Finding`, `Recommendation`, `User`
-  - Shared types live in `packages/shared` and are imported by both `apps/`
-- **Auth:** JWT (short-lived access token), issued at login, passed as `Authorization: Bearer <token>`
+- **Auth:** Magic link only. JWT issued as `HttpOnly; Secure; SameSite=Lax` cookie on verify. 7-day expiry. Secret from `JWT_SECRET` env var.
+- **Rate limiting:** Anonymous checked via two Redis keys (IP hash + browser UUID). Registered checked via `users.audits_this_month` with lazy monthly reset.
 - **Queue:** BullMQ on Redis — `audit-jobs` queue; worker runs crawl + analysis pipeline
-- **AI Answerability (Category 8):** server-side LLM call (OpenAI API) against extracted site content — no external query, no external mention check; free-tier eligible
-- **Live LLM queries (Pro):** separate module; calls GPT-4o, Claude 3, Gemini Pro APIs; adds up to 5 bonus points; capped at 100 total
-- **PDF:** generated server-side on demand using `@react-pdf/renderer` or `puppeteer`; Pro only
-- **Email:** Resend SDK
-- **Payments:** Stripe Checkout + webhooks for plan updates
+- **AI Answerability (Category 8):** server-side LLM call (OpenAI API) against extracted site content
+- **Email:** Resend SDK; `FROM_EMAIL` env var; magic link + results confirmation + expiry reminder
+- **Donations:** Ko-fi webhook; `KOFI_VERIFICATION_TOKEN` env var; stores `donated=true` + `donation_points` on user
+- **SEO/GEO:** Vite SSG pre-renders `/` only; structured data (JSON-LD); `llms.txt`, `robots.txt`, `sitemap.xml`, `ai.txt` in `public/`
 
 ---
 

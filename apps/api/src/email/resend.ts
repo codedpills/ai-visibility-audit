@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 
 export interface EmailService {
   sendConfirmationEmail: (email: string, auditId: string) => Promise<void>;
+  sendMagicLinkEmail?: (email: string, link: string) => Promise<void>;
 }
 
 export function createEmailService(
@@ -26,6 +27,22 @@ export function createEmailService(
           <p>Your results will be available for 7 days.</p>
           <hr />
           <p><small>Upgrade to Pro for permanent access and PDF reports.</small></p>
+        `,
+      });
+      if (error) {
+        throw new Error(error.message);
+      }
+    },
+    async sendMagicLinkEmail(email: string, link: string) {
+      const { error } = await resend.emails.send({
+        from,
+        to: email,
+        subject: 'Your AI Visibility Audit login link',
+        html: `
+          <h1>Log in to AI Visibility Audit</h1>
+          <p>Click the link below to log in. It expires in 15 minutes.</p>
+          <p><a href="${link}">${link}</a></p>
+          <p><small>If you didn't request this, you can ignore this email.</small></p>
         `,
       });
       if (error) {
