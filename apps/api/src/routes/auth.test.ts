@@ -4,7 +4,6 @@ import { buildAuthServer } from './auth.js';
 const JWT_SECRET = 'test-secret-at-least-32-chars-long!!';
 
 const mockUpsertUser = vi.fn();
-const mockFindUserByEmail = vi.fn();
 const mockFindUserById = vi.fn();
 const mockSaveMagicLink = vi.fn();
 const mockVerifyMagicLink = vi.fn();

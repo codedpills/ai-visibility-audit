@@ -28,7 +28,7 @@ export function buildServer(
   db: Kysely<Database>,
   redisClient: ConnectionOptions,
   emailService?: EmailService,
-  redis?: Redis
+  _redis?: Redis
 ) {
   const app = Fastify({
     logger: {

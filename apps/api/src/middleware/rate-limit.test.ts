@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { checkAnonLimit, checkRegisteredLimit } from './rate-limit.js';
 
 // Minimal Redis stub — tracks incr/get calls in memory

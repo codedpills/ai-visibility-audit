@@ -1,12 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { Kysely, sql } from 'kysely';
+import { describe, it, expect } from 'vitest';
+import { Kysely } from 'kysely';
 import type { Database } from '../types/database.js';
-import {
-  upsertUser,
-  findUserByEmail,
-  incrementAuditCount,
-  resetMonthlyCountIfNeeded,
-} from './users.js';
+import { upsertUser, findUserByEmail } from './users.js';
 
 // We use a real DB cast (Kysely<Database>) — tests call the real helpers
 // but the DB is injected so tests remain fast with a real local Postgres.
@@ -17,7 +12,7 @@ function makeDb(rows: Array<Record<string, unknown>> = []): Kysely<Database> {
   const store = [...rows];
 
   return {
-    selectFrom: (table: string) => ({
+    selectFrom: (_table: string) => ({
       selectAll: () => ({
         where: (_col: string, _op: string, _val: unknown) => ({
           executeTakeFirst: async () =>

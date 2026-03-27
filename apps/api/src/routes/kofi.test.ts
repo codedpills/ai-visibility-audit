@@ -60,6 +60,10 @@ describe('POST /webhooks/kofi', () => {
     });
 
     expect(res.statusCode).toBe(200);
+    expect(mockFindUserByEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      'donor@example.com'
+    );
     expect(mockRecordDonation).toHaveBeenCalledWith(
       expect.anything(),
       'user-1',
@@ -84,6 +88,10 @@ describe('POST /webhooks/kofi', () => {
     });
 
     expect(res.statusCode).toBe(200);
+    expect(mockFindUserByEmail).toHaveBeenCalledWith(
+      expect.anything(),
+      'unknown@example.com'
+    );
     expect(mockRecordDonation).not.toHaveBeenCalled();
   });
 
