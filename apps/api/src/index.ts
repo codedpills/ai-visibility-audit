@@ -30,7 +30,7 @@ createExpiryWorker({
   deleteExpiredAudits: () => deleteExpiredAudits(db),
 }).start(redis);
 
-const app = buildServer(db, redis, emailService);
+const app = buildServer(db, redis, emailService, redis);
 const port = parseInt(process.env.PORT ?? '3000', 10);
 
 app.listen({ port, host: '0.0.0.0' }, (err) => {
