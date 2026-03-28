@@ -52,7 +52,10 @@ export function buildServer(
   const anonDailyLimit = parseInt(process.env.ANON_DAILY_LIMIT ?? '1', 10);
   const webBaseUrl = process.env.WEB_BASE_URL ?? 'http://localhost:5173';
 
-  app.register(cors);
+  app.register(cors, {
+    origin: webBaseUrl,
+    credentials: true,
+  });
   app.register(cookie);
   app.register(healthRoute);
   app.register(auditsRoute, {
