@@ -6,8 +6,9 @@ declare global {
 
 // Runtime config (injected via /env-config.js at container start) takes precedence
 // over the build-time VITE_API_URL so Railway env var changes never require a rebuild.
+// Guard against SSR (Node.js) environment where window is not defined.
 const _rawApiUrl =
-  window.__ENV__?.API_URL ??
+  (typeof window !== 'undefined' ? window.__ENV__?.API_URL : undefined) ??
   import.meta.env.VITE_API_URL ??
   'http://localhost:3000';
 // Guard: if the value doesn't start with http(s)://, treat it as misconfigured
@@ -17,7 +18,11 @@ const API_BASE =
     ? _rawApiUrl.replace(/\/$/, '') // strip trailing slash
     : 'http://localhost:3000';
 
-if (import.meta.env.PROD && !_rawApiUrl.startsWith('http')) {
+if (
+  import.meta.env.PROD &&
+  typeof window !== 'undefined' &&
+  !_rawApiUrl.startsWith('http')
+) {
   console.error(
     '[api/client] API_URL is not set or missing protocol — API calls will fail. Set API_URL in Railway web service Variables.'
   );

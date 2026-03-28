@@ -3,6 +3,52 @@ import { useNavigate } from 'react-router-dom';
 import { submitAudit } from '../api/client';
 import { colors, fonts } from '../design/tokens';
 
+const HOW_IT_WORKS = [
+  {
+    n: '1',
+    title: 'Enter your URL',
+    desc: 'Paste any website URL. No account needed.',
+  },
+  {
+    n: '2',
+    title: 'Crawl & analyse',
+    desc: 'We crawl up to 10 pages and run 8 GEO signal analysers.',
+  },
+  {
+    n: '3',
+    title: 'See your score',
+    desc: 'Get a breakdown across all 8 categories, scored out of 100.',
+  },
+  {
+    n: '4',
+    title: 'Fix what matters',
+    desc: 'Unlock the full prioritised recommendation list to start improving.',
+  },
+];
+
+const FAQS = [
+  {
+    q: 'What is GEO (Generative Engine Optimisation)?',
+    a: 'GEO is the practice of optimising your website so AI language models — ChatGPT, Claude, Gemini — can understand, cite, and recommend your content. Unlike traditional SEO, GEO focuses on how AI systems extract and interpret information from your pages.',
+  },
+  {
+    q: 'How is the GEO score calculated?',
+    a: 'Your score is calculated across 8 categories: Entity Definition (15 pts), Content Clarity (15 pts), Topic Authority (15 pts), Brand Authority (15 pts), Semantic Structure (10 pts), Structured Data (10 pts), AI Crawlability (10 pts), and AI Answerability (10 pts).',
+  },
+  {
+    q: 'Is this tool really free?',
+    a: 'Yes. AI Visibility Audit is completely free. Anonymous visitors can run 1 audit per day. Registered users (email only, no password) can run up to 3 per month and keep results for 30 days. The project is donation-supported via Ko-fi.',
+  },
+  {
+    q: 'What AI systems is this optimised for?',
+    a: 'The audit analyses signals relevant to all major AI systems: ChatGPT (OpenAI), Claude (Anthropic), Gemini (Google), and Perplexity AI. The AI Crawlability category checks whether GPTBot, ClaudeBot, PerplexityBot, and Google-Extended are permitted in your robots.txt.',
+  },
+  {
+    q: 'How many pages does it crawl?',
+    a: 'The tool crawls up to 10 pages from your domain, always respecting your robots.txt rules. It analyses GEO signals from all crawled pages and aggregates them into a final score.',
+  },
+];
+
 export function HomePage() {
   const navigate = useNavigate();
   const [url, setUrl] = useState('');
@@ -88,6 +134,39 @@ export function HomePage() {
             </span>
           ))}
         </div>
+
+        {/* How it works — matches HowTo JSON-LD in index.html */}
+        <section aria-labelledby="how-it-works" style={s.section}>
+          <h2 id="how-it-works" style={s.sectionHeading}>
+            How it works
+          </h2>
+          <div style={s.stepGrid}>
+            {HOW_IT_WORKS.map((step) => (
+              <div key={step.n} style={s.stepCard}>
+                <span style={s.stepNum}>{step.n}</span>
+                <div>
+                  <strong style={s.stepTitle}>{step.title}</strong>
+                  <p style={s.stepDesc}>{step.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* FAQ — matches FAQPage JSON-LD in index.html */}
+        <section aria-labelledby="faq" style={s.section}>
+          <h2 id="faq" style={s.sectionHeading}>
+            Frequently asked questions
+          </h2>
+          <div style={s.faqList}>
+            {FAQS.map((faq) => (
+              <div key={faq.q} style={s.faqItem}>
+                <h3 style={s.faqQ}>{faq.q}</h3>
+                <p style={s.faqA}>{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </div>
     </main>
   );
@@ -183,5 +262,83 @@ const s = {
     border: `1px solid ${colors.border}`,
     color: colors.textMuted,
     letterSpacing: '0.03em',
+  },
+  section: {
+    marginTop: '4rem',
+    textAlign: 'left' as const,
+  },
+  sectionHeading: {
+    fontFamily: fonts.heading,
+    fontSize: '1.375rem',
+    fontWeight: 700,
+    color: colors.text,
+    marginBottom: '1.5rem',
+    textAlign: 'center' as const,
+  },
+  // How it works
+  stepGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gap: '1rem',
+  },
+  stepCard: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '1rem',
+    padding: '1rem 1.25rem',
+    borderRadius: '10px',
+    background: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+  },
+  stepNum: {
+    flexShrink: 0,
+    width: '28px',
+    height: '28px',
+    borderRadius: '50%',
+    background: colors.gradientButton,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '0.75rem',
+    fontWeight: 700,
+    color: colors.text,
+  },
+  stepTitle: {
+    display: 'block',
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+    color: colors.text,
+    marginBottom: '0.25rem',
+  },
+  stepDesc: {
+    fontSize: '0.85rem',
+    color: colors.textMuted,
+    lineHeight: 1.5,
+    margin: 0,
+  },
+  // FAQ
+  faqList: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '1rem',
+  },
+  faqItem: {
+    padding: '1.25rem',
+    borderRadius: '10px',
+    background: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    textAlign: 'left' as const,
+  },
+  faqQ: {
+    fontSize: '0.9375rem',
+    fontWeight: 600,
+    color: colors.text,
+    margin: '0 0 0.5rem',
+  },
+  faqA: {
+    fontSize: '0.875rem',
+    color: colors.textMuted,
+    lineHeight: 1.6,
+    margin: 0,
   },
 } as const;

@@ -1,0 +1,39 @@
+# AI Visibility Audit — llms.txt
+# Spec: https://llmstxt.org/
+# This file describes the product for AI language models and retrieval systems.
+
+> AI Visibility Audit is a free tool that scores any website's readiness to be discovered, cited, and recommended by AI chatbots (ChatGPT, Claude, Gemini, Perplexity). It crawls up to 10 pages and runs 8 static GEO signal analysers to produce a score out of 100.
+
+## What it does
+
+Paste any URL. The tool crawls up to 10 pages, respects robots.txt, and analyses 8 GEO categories:
+
+- **Entity Definition** (15 pts): Is it clear who you are, what you do, and who you serve? Checks homepage one-liner, problem/solution framing, and Organization schema.
+- **Content Clarity** (15 pts): Can AI models extract and summarise your content? Checks plain-language summaries, bullet lists, FAQ sections, and readability.
+- **Topic Authority** (15 pts): Is your site seen as the go-to source on its topic? Checks page count, blog depth, internal links, and content recency.
+- **Brand Authority** (15 pts): Do external trust signals exist? Checks contact page, team page, press mentions, testimonials, and social profiles.
+- **Semantic Structure** (10 pts): Is your HTML structured for AI parsing? Checks single H1, H2-as-questions, paragraph length.
+- **Structured Data** (10 pts): Do you use JSON-LD? Checks Organization, Product, Article, FAQ, and HowTo schema types.
+- **AI Crawlability** (10 pts): Does your robots.txt allow AI crawlers? Checks GPTBot, ClaudeBot, PerplexityBot, and Google-Extended permissions. Also checks for llms.txt.
+- **AI Answerability** (10 pts): Does your content directly answer common AI prompts about your product category?
+
+Every finding maps to a Critical / Medium / Low recommendation with the specific fix and optional code snippet.
+
+## Access model
+
+- Anonymous: 1 audit per day (rate-limited by IP + browser token via Redis)
+- Registered (magic-link email, no password): 3 audits per month
+- Results stored 7 days (anonymous) or 30 days (registered)
+- No paid plans. Donation-supported via Ko-fi.
+
+## Tech
+
+React 19 + Vite 6 frontend. Fastify 5 + Node.js API. PostgreSQL + Redis. Deployed on Railway.
+
+## Source
+
+Open source: https://github.com/codedpills/ai-visibility-audit
+
+## Contact
+
+https://aivisibilityaudit.cc

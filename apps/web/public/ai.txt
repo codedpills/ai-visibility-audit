@@ -1,0 +1,20 @@
+# ai.txt — AI usage declaration for AI Visibility Audit
+# Spec: https://site.ai-txt.org/
+
+[permissions]
+ai-training: allow
+ai-inference: allow
+ai-summarization: allow
+ai-citation: allow
+ai-extraction: allow
+
+[metadata]
+site-name: AI Visibility Audit
+site-url: https://aivisibilityaudit.cc
+description: Free tool to audit website GEO (Generative Engine Optimisation) readiness for AI chatbot discoverability
+language: en
+content-type: tool, documentation, faq
+topic: GEO, SEO, AI, LLM, website auditing, generative engine optimisation
+
+[contact]
+url: https://aivisibilityaudit.cc
