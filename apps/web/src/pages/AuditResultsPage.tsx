@@ -657,6 +657,7 @@ const s = {
     fontSize: '0.85rem',
     textAlign: 'center' as const,
     marginBottom: '1.25rem',
+    marginTop: '2.25rem',
   },
   // Legacy (kept to avoid breaking anything)
   footer: { display: 'none' },
