@@ -90,6 +90,21 @@ export function HomePage() {
 
   return (
     <main style={s.root}>
+      {/* Fixed Ko-fi widget — always visible, top-right below NavBar */}
+      <aside style={s.kofiWidget} aria-label="Support this project">
+        <p style={s.kofiText}>
+          This tool is free. If it helped you, consider supporting it.
+        </p>
+        <a
+          href="https://ko-fi.com/aivisibilityaudit"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={s.kofiBtn}
+        >
+          ☕ Support on Ko-fi
+        </a>
+      </aside>
+
       <div style={s.content}>
         <p style={s.eyebrow}>Free AI Visibility Audit</p>
         <h1 style={s.heading}>Is your website invisible to AI?</h1>
@@ -184,22 +199,6 @@ export function HomePage() {
               </div>
             ))}
           </div>
-        </section>
-
-        {/* Ko-fi donate button */}
-        <section style={s.kofiSection} aria-label="Support this project">
-          <p style={s.kofiText}>
-            This tool is completely free. If it helped you, consider supporting
-            it.
-          </p>
-          <a
-            href="https://ko-fi.com/aivisibilityaudit"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={s.kofiBtn}
-          >
-            ☕ Support on Ko-fi
-          </a>
         </section>
       </div>
     </main>
@@ -385,28 +384,38 @@ const s = {
     lineHeight: 1.6,
     margin: 0,
   },
-  // Ko-fi
-  kofiSection: {
-    marginTop: '3.5rem',
-    paddingTop: '2.5rem',
-    borderTop: `1px solid ${colors.border}`,
+  // Ko-fi fixed widget
+  kofiWidget: {
+    position: 'fixed' as const,
+    top: '8.75rem', // clears the fixed NavBar
+    right: '3.5rem',
+    zIndex: 90,
+    background: colors.bgCard,
+    border: `1px solid ${colors.border}`,
+    borderRadius: '12px',
+    padding: '1rem 0.5rem',
     textAlign: 'center' as const,
+    maxWidth: '172px',
+    boxShadow: '0 4px 24px rgba(0,0,0,0.35)',
   },
   kofiText: {
-    fontSize: '0.875rem',
+    fontSize: '0.775rem',
     color: colors.textMuted,
-    marginBottom: '1rem',
+    lineHeight: 1.5,
+    marginBottom: '0.75rem',
+    margin: '0 0 0.75rem',
   },
   kofiBtn: {
     display: 'inline-block',
-    padding: '0.625rem 1.25rem',
+    padding: '0.5rem 1rem',
     borderRadius: '8px',
     background: '#ff5f5f',
     color: '#fff',
     fontFamily: fonts.body,
     fontWeight: 600,
-    fontSize: '0.9rem',
+    fontSize: '0.825rem',
     textDecoration: 'none',
     transition: 'opacity 0.2s',
+    whiteSpace: 'nowrap' as const,
   },
 } as const;
