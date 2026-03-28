@@ -24,7 +24,13 @@ export function MagicLinkVerifyPage() {
 
     verifyMagicLink(token)
       .then(() => refresh())
-      .then(() => navigate('/', { replace: true }))
+      .then(() => {
+        const redirect = searchParams.get('redirect');
+        // Only follow safe relative paths to prevent open redirect
+        const destination =
+          redirect && redirect.startsWith('/') ? redirect : '/my-audits';
+        navigate(destination, { replace: true });
+      })
       .catch((err: unknown) => {
         setError(
           err instanceof Error

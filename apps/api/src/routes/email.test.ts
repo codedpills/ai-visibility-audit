@@ -25,28 +25,28 @@ const mockRecommendations: Recommendation[] = [
   },
 ];
 
-function buildApp(opts: {
-  getAudit?: (
-    id: string
-  ) => Promise<{ recommendations: Recommendation[] } | null>;
-  saveEmail?: (auditId: string, email: string) => Promise<void>;
-  sendConfirmationEmail?: (email: string, auditId: string) => Promise<void>;
-}) {
+const defaultDeps = () => ({
+  getAudit: vi.fn().mockResolvedValue({ recommendations: mockRecommendations }),
+  saveEmail: vi.fn().mockResolvedValue(undefined),
+  upsertUser: vi
+    .fn()
+    .mockResolvedValue({ id: 'user-1', email: 'user@example.com' }),
+  generateToken: vi.fn().mockReturnValue('tok123'),
+  hashToken: vi.fn().mockReturnValue('hash123'),
+  saveMagicLink: vi.fn().mockResolvedValue(undefined),
+  sendResultsMagicLinkEmail: vi.fn().mockResolvedValue(undefined),
+  webBaseUrl: 'https://example.com',
+});
+
+function buildApp(overrides: Partial<ReturnType<typeof defaultDeps>> = {}) {
   const app = Fastify();
-  app.register(emailRoute, {
-    getAudit:
-      opts.getAudit ??
-      vi.fn().mockResolvedValue({ recommendations: mockRecommendations }),
-    saveEmail: opts.saveEmail ?? vi.fn().mockResolvedValue(undefined),
-    sendConfirmationEmail:
-      opts.sendConfirmationEmail ?? vi.fn().mockResolvedValue(undefined),
-  });
+  app.register(emailRoute, { ...defaultDeps(), ...overrides });
   return app;
 }
 
 describe('POST /audits/:id/email', () => {
   it('returns 400 for missing email', async () => {
-    const app = buildApp({});
+    const app = buildApp();
     const res = await app.inject({
       method: 'POST',
       url: '/audits/abc-123/email',
@@ -56,7 +56,7 @@ describe('POST /audits/:id/email', () => {
   });
 
   it('returns 400 for invalid email format', async () => {
-    const app = buildApp({});
+    const app = buildApp();
     const res = await app.inject({
       method: 'POST',
       url: '/audits/abc-123/email',
@@ -89,17 +89,43 @@ describe('POST /audits/:id/email', () => {
     expect(body.recommendations).toHaveLength(3);
   });
 
-  it('sends a confirmation email after saving', async () => {
-    const sendConfirmationEmail = vi.fn().mockResolvedValue(undefined);
-    const app = buildApp({ sendConfirmationEmail });
+  it('upserts user and sends magic link email with redirect to results', async () => {
+    const upsertUser = vi
+      .fn()
+      .mockResolvedValue({ id: 'u42', email: 'user@example.com' });
+    const saveMagicLink = vi.fn().mockResolvedValue(undefined);
+    const sendResultsMagicLinkEmail = vi.fn().mockResolvedValue(undefined);
+    const generateToken = vi.fn().mockReturnValue('mytoken');
+    const hashToken = vi.fn().mockReturnValue('myhash');
+
+    const app = buildApp({
+      upsertUser,
+      saveMagicLink,
+      sendResultsMagicLinkEmail,
+      generateToken,
+      hashToken,
+      webBaseUrl: 'https://app.example.com',
+    });
+
     await app.inject({
       method: 'POST',
-      url: '/audits/audit-123/email',
+      url: '/audits/audit-456/email',
       body: { email: 'user@example.com' },
     });
-    expect(sendConfirmationEmail).toHaveBeenCalledWith(
-      'user@example.com',
-      'audit-123'
+
+    expect(upsertUser).toHaveBeenCalledWith('user@example.com');
+    expect(saveMagicLink).toHaveBeenCalledWith(
+      'u42',
+      'myhash',
+      expect.any(Date)
     );
+
+    expect(sendResultsMagicLinkEmail).toHaveBeenCalledOnce();
+    const [emailArg, linkArg] = sendResultsMagicLinkEmail.mock.calls[0];
+    expect(emailArg).toBe('user@example.com');
+    expect(linkArg).toContain(
+      'https://app.example.com/auth/verify?token=mytoken'
+    );
+    expect(linkArg).toContain(encodeURIComponent('/audits/audit-456/results'));
   });
 });

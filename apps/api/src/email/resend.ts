@@ -1,32 +1,30 @@
 import { Resend } from 'resend';
 
 export interface EmailService {
-  sendConfirmationEmail: (email: string, auditId: string) => Promise<void>;
+  sendResultsMagicLinkEmail: (email: string, link: string) => Promise<void>;
   sendMagicLinkEmail?: (email: string, link: string) => Promise<void>;
 }
 
 export function createEmailService(
   apiKey: string,
-  baseUrl: string
+  _baseUrl: string
 ): EmailService {
   const resend = new Resend(apiKey);
   const fromEmail = process.env.FROM_EMAIL ?? 'onboarding@resend.dev';
   const from = `AI Visibility Audit <${fromEmail}>`;
 
   return {
-    async sendConfirmationEmail(email: string, auditId: string) {
-      const resultsUrl = `${baseUrl}/audits/${auditId}/results`;
+    async sendResultsMagicLinkEmail(email: string, link: string) {
       const { error } = await resend.emails.send({
         from,
         to: email,
-        subject: 'Your AI Visibility Audit Results',
+        subject: 'Your full AI Visibility Audit report is ready →',
         html: `
-          <h1>Your audit results are ready</h1>
-          <p>View your full AI Visibility Audit report here:</p>
-          <p><a href="${resultsUrl}">${resultsUrl}</a></p>
-          <p>Your results will be available for 7 days.</p>
-          <hr />
-          <p><small>Upgrade to Pro for permanent access and PDF reports.</small></p>
+          <h1>Your AI Visibility Audit report is ready</h1>
+          <p>Click the link below to view your full report with all recommendations and a deep breakdown of each score.</p>
+          <p><a href="${link}">View your full report →</a></p>
+          <p>This link also logs you in automatically. It expires in 15 minutes.</p>
+          <p><small>If you didn't request this, you can ignore this email.</small></p>
         `,
       });
       if (error) {

@@ -76,9 +76,15 @@ export function buildServer(
     getAudit: (id: string) => getAuditById(db, id),
     saveEmail: (auditId: string, email: string) =>
       saveAuditEmail(db, auditId, email),
-    sendConfirmationEmail: async (email: string, auditId: string) => {
-      await emailService?.sendConfirmationEmail(email, auditId);
+    upsertUser: (email: string) => upsertUser(db, email),
+    generateToken: generateMagicToken,
+    hashToken,
+    saveMagicLink: (userId: string, hash: string, expiresAt: Date) =>
+      saveMagicLink(db, userId, hash, expiresAt),
+    sendResultsMagicLinkEmail: async (email: string, link: string) => {
+      await emailService?.sendResultsMagicLinkEmail(email, link);
     },
+    webBaseUrl,
   });
 
   // Auth routes

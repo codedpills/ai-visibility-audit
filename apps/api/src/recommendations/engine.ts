@@ -42,6 +42,59 @@ const DESCRIPTIONS: Record<AuditCategory, string> = {
 };
 
 const SNIPPETS: Partial<Record<AuditCategory, string>> = {
+  'entity-definition': `<!-- Add Organization schema to your homepage <head> -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Your Company Name",
+  "url": "https://yoursite.com",
+  "description": "One-sentence description of what you do and who you serve.",
+  "foundingDate": "2020",
+  "sameAs": [
+    "https://twitter.com/yourhandle",
+    "https://linkedin.com/company/yourcompany"
+  ]
+}
+</script>`,
+  'content-clarity': `<!-- Add a plain-language FAQ section to your page -->
+<section>
+  <h2>Frequently Asked Questions</h2>
+  <div itemscope itemtype="https://schema.org/FAQPage">
+    <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+      <h3 itemprop="name">What does [Your Company] do?</h3>
+      <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+        <p itemprop="text">
+          [Your Company] helps [target audience] to [achieve outcome]
+          by [your unique approach].
+        </p>
+      </div>
+    </div>
+  </div>
+</section>`,
+  'topic-authority': `<!-- Add a HowTo or Article schema to your in-depth content pages -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Your In-Depth Guide Title",
+  "author": { "@type": "Organization", "name": "Your Company" },
+  "datePublished": "2025-01-01",
+  "description": "A comprehensive guide to [topic] covering [key areas]."
+}
+</script>`,
+  'semantic-structure': `<!-- One H1 per page -->
+<h1>Your Primary Page Topic</h1>
+
+<!-- Question-phrased H2s help AI parse your content -->
+<h2>What is [topic]?</h2>
+<p>Brief, direct answer in 1-2 sentences.</p>
+
+<h2>How does [topic] work?</h2>
+<p>Step-by-step explanation in short paragraphs.</p>
+
+<h2>Who is [topic] for?</h2>
+<p>Clear audience definition.</p>`,
   'structured-data': `<script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -58,14 +111,40 @@ Allow: /
 User-agent: ClaudeBot
 Allow: /
 
-User-agent: Google-Extended
-Allow: /`,
-  'semantic-structure': `<!-- One H1 per page -->
-<h1>Your Primary Page Topic</h1>
+User-agent: anthropic-ai
+Allow: /
 
-<!-- Question-phrased H2s for AI parsability -->
-<h2>What is [topic]?</h2>
-<h2>How does [topic] work?</h2>`,
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /`,
+  'brand-authority': `<!-- Add your brand entity to Wikipedia-adjacent sources via Wikidata -->
+<!-- Short-term: add a press/media page with clear brand facts -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Your Company",
+  "url": "https://yoursite.com",
+  "logo": "https://yoursite.com/logo.png",
+  "contactPoint": {
+    "@type": "ContactPoint",
+    "contactType": "customer support",
+    "email": "support@yoursite.com"
+  }
+}
+</script>`,
+  'ai-answerability': `<!-- Structure your content to directly answer questions -->
+<!-- Before: vague promotional text -->
+<p>We offer best-in-class solutions for modern businesses.</p>
+
+<!-- After: direct, citable answer -->
+<p>
+  [Your Company] is a [category] tool that helps [audience] to
+  [specific outcome]. It works by [mechanism], typically
+  delivering [result] within [timeframe].
+</p>`,
 };
 
 function getPriority(score: number, maxScore: number): RecommendationPriority {
@@ -97,7 +176,7 @@ export function generateRecommendations(findings: Finding[]): Recommendation[] {
       title: TITLES[f.category],
       description: DESCRIPTIONS[f.category],
     };
-    if (priority === 'critical' && SNIPPETS[f.category]) {
+    if (SNIPPETS[f.category]) {
       rec.snippet = SNIPPETS[f.category];
     }
     return rec;

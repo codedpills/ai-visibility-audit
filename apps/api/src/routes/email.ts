@@ -8,14 +8,32 @@ export interface EmailRouteDeps {
     id: string
   ) => Promise<{ recommendations: Recommendation[] } | null>;
   saveEmail: (auditId: string, email: string) => Promise<void>;
-  sendConfirmationEmail: (email: string, auditId: string) => Promise<void>;
+  upsertUser: (email: string) => Promise<{ id: string; email: string }>;
+  generateToken: () => string;
+  hashToken: (token: string) => string;
+  saveMagicLink: (
+    userId: string,
+    hash: string,
+    expiresAt: Date
+  ) => Promise<void>;
+  sendResultsMagicLinkEmail: (email: string, link: string) => Promise<void>;
+  webBaseUrl: string;
 }
 
 export const emailRoute: FastifyPluginAsync<EmailRouteDeps> = async (
   fastify,
   opts
 ) => {
-  const { getAudit, saveEmail, sendConfirmationEmail } = opts;
+  const {
+    getAudit,
+    saveEmail,
+    upsertUser,
+    generateToken,
+    hashToken,
+    saveMagicLink,
+    sendResultsMagicLinkEmail,
+    webBaseUrl,
+  } = opts;
 
   fastify.post<{ Params: { id: string }; Body: { email?: string } }>(
     '/audits/:id/email',
@@ -34,7 +52,19 @@ export const emailRoute: FastifyPluginAsync<EmailRouteDeps> = async (
       }
 
       await saveEmail(request.params.id, email);
-      await sendConfirmationEmail(email, request.params.id);
+
+      // Upsert user + create magic link that redirects back to this audit's results
+      const user = await upsertUser(email);
+      const token = generateToken();
+      const hash = hashToken(token);
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+      await saveMagicLink(user.id, hash, expiresAt);
+
+      const redirect = encodeURIComponent(
+        `/audits/${request.params.id}/results`
+      );
+      const link = `${webBaseUrl}/auth/verify?token=${token}&redirect=${redirect}`;
+      await sendResultsMagicLinkEmail(email, link);
 
       return reply.status(201).send({ recommendations: audit.recommendations });
     }

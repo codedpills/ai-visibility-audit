@@ -20,18 +20,28 @@ describe('createEmailService', () => {
     vi.clearAllMocks();
   });
 
-  it('sends an email with a results link on success', async () => {
+  it('sends a results magic-link email on success', async () => {
     mockSend.mockResolvedValue({ data: { id: 'msg_1' }, error: null });
+    const link = `${BASE_URL}/auth/verify?token=abc&redirect=%2Faudits%2F${AUDIT_ID}%2Fresults`;
 
     const svc = createEmailService('re_test_key', BASE_URL);
     await expect(
-      svc.sendConfirmationEmail(EMAIL, AUDIT_ID)
+      svc.sendResultsMagicLinkEmail(EMAIL, link)
     ).resolves.not.toThrow();
 
     expect(mockSend).toHaveBeenCalledOnce();
     const [payload] = mockSend.mock.calls[0];
     expect(payload.to).toBe(EMAIL);
-    expect(payload.html).toContain(`${BASE_URL}/audits/${AUDIT_ID}/results`);
+    expect(payload.html).toContain(link);
+  });
+
+  it('email subject mentions the audit report', async () => {
+    mockSend.mockResolvedValue({ data: { id: 'msg_s' }, error: null });
+    const link = `${BASE_URL}/auth/verify?token=xyz&redirect=%2Faudits%2Ftest%2Fresults`;
+    const svc = createEmailService('re_test_key', BASE_URL);
+    await svc.sendResultsMagicLinkEmail(EMAIL, link);
+    const [payload] = mockSend.mock.calls[0];
+    expect(payload.subject).toMatch(/report|result/i);
   });
 
   it('throws when Resend returns an error', async () => {
@@ -39,9 +49,9 @@ describe('createEmailService', () => {
       data: null,
       error: { name: 'validation_error', message: 'Invalid from address' },
     });
-
+    const link = `${BASE_URL}/auth/verify?token=xyz`;
     const svc = createEmailService('re_test_key', BASE_URL);
-    await expect(svc.sendConfirmationEmail(EMAIL, AUDIT_ID)).rejects.toThrow(
+    await expect(svc.sendResultsMagicLinkEmail(EMAIL, link)).rejects.toThrow(
       'Invalid from address'
     );
   });
@@ -51,7 +61,10 @@ describe('createEmailService', () => {
     mockSend.mockResolvedValue({ data: { id: 'msg_2' }, error: null });
 
     const svc = createEmailService('re_test_key', BASE_URL);
-    await svc.sendConfirmationEmail(EMAIL, AUDIT_ID);
+    await svc.sendResultsMagicLinkEmail(
+      EMAIL,
+      `${BASE_URL}/auth/verify?token=t`
+    );
 
     const [payload] = mockSend.mock.calls[0];
     expect(payload.from).toContain('audit@myapp.com');
@@ -64,7 +77,10 @@ describe('createEmailService', () => {
     mockSend.mockResolvedValue({ data: { id: 'msg_3' }, error: null });
 
     const svc = createEmailService('re_test_key', BASE_URL);
-    await svc.sendConfirmationEmail(EMAIL, AUDIT_ID);
+    await svc.sendResultsMagicLinkEmail(
+      EMAIL,
+      `${BASE_URL}/auth/verify?token=t`
+    );
 
     const [payload] = mockSend.mock.calls[0];
     expect(payload.from).toContain('onboarding@resend.dev');

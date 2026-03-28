@@ -4,8 +4,10 @@ import { getAudit, submitEmail } from '../api/client';
 import type {
   AuditResponse,
   CategoryScoreResponse,
+  FindingResponse,
   RecommendationResponse,
 } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { colors, fonts, radius } from '../design/tokens';
 
 function scoreColor(score: number, max: number): string {
@@ -114,7 +116,13 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
     'The clearest predictor of AI citation is whether your content directly answers the questions your audience asks. This checks for concise, factual, question-answering language on your site. Vague or promotional copy is the least likely to be quoted by an AI.',
 };
 
-function CategoryCard({ cs }: { cs: CategoryScoreResponse }) {
+function CategoryCard({
+  cs,
+  finding,
+}: {
+  cs: CategoryScoreResponse;
+  finding?: FindingResponse;
+}) {
   const [open, setOpen] = useState(false);
   const pct = Math.round((cs.score / cs.maxScore) * 100);
   const color = scoreColor(cs.score, cs.maxScore);
@@ -151,7 +159,17 @@ function CategoryCard({ cs }: { cs: CategoryScoreResponse }) {
       </button>
 
       {/* Accordion body */}
-      {open && description && <p style={s.catDescription}>{description}</p>}
+      {open && (
+        <div style={s.catBody}>
+          {description && <p style={s.catDescription}>{description}</p>}
+          {finding && finding.details && (
+            <p style={s.catFinding}>
+              <strong>Detected on your site: </strong>
+              {finding.details}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -218,10 +236,11 @@ function EmailGate({
 
   return (
     <div style={s.gate}>
-      <h3 style={s.gateTitle}>Unlock Full Recommendations</h3>
+      <h3 style={s.gateTitle}>Unlock the Full Report</h3>
       <p style={s.gateDesc}>
-        Enter your email to see the complete prioritised recommendation list —
-        free, no spam.
+        Enter your email to get all recommendations with code examples — free,
+        no spam. We'll send you a magic link that logs you in and takes you
+        straight to your full report.
       </p>
       <form onSubmit={handleSubmit} style={s.gateForm}>
         <input
@@ -233,7 +252,7 @@ function EmailGate({
           style={s.gateInput}
         />
         <button type="submit" disabled={loading} style={s.gateButton}>
-          {loading ? 'Sending…' : 'Get Full Report →'}
+          {loading ? 'Sending…' : 'Email me the full report →'}
         </button>
       </form>
       {error && (
@@ -274,6 +293,7 @@ function ExpiryBanner({ expiresAt }: { expiresAt: string }) {
 
 export function AuditResultsPage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [audit, setAudit] = useState<AuditResponse | null>(null);
   const [error, setError] = useState('');
   const [unlockedRecs, setUnlockedRecs] = useState<
@@ -319,27 +339,51 @@ export function AuditResultsPage() {
     );
   }
 
+  const isLoggedIn = !!user;
   const geoScore = audit.geoScore ?? 0;
   const grade = scoreGrade(geoScore);
   const catScores = audit.categoryScores ?? [];
+  const findings = audit.findings ?? [];
   const allRecs = unlockedRecs ?? audit.recommendations ?? [];
   const previewRecs = allRecs
     .filter((r) => r.priority === 'critical')
     .slice(0, 3);
-  const isUnlocked = unlockedRecs !== null;
+  // Logged-in users always see everything; anon users see top 3 critical until they submit email
+  const isUnlocked = isLoggedIn || unlockedRecs !== null;
+  const displayedRecs = isUnlocked ? allRecs : previewRecs;
 
   return (
     <main style={s.root}>
+      {/* Print CSS — hides UI chrome when printing */}
+      <style>{`
+        @media print {
+          nav, aside, .no-print { display: none !important; }
+          body { background: #fff; color: #111; }
+          a { color: #4A2574; }
+        }
+      `}</style>
+
       <div style={s.container}>
         {/* Expiry banner */}
         {audit.expiresAt && <ExpiryBanner expiresAt={audit.expiresAt} />}
 
         {/* Header */}
         <div style={s.header}>
-          <Link to="/" style={s.link}>
-            ← Run another audit
+          <Link to={isLoggedIn ? '/my-audits' : '/'} style={s.link}>
+            {isLoggedIn ? '← My audits' : '← Run another audit'}
           </Link>
-          <p style={s.auditUrl}>{audit.url}</p>
+          <div style={s.headerRight}>
+            <p style={s.auditUrl}>{audit.url}</p>
+            {isLoggedIn && (
+              <button
+                className="no-print"
+                style={s.pdfButton}
+                onClick={() => window.print()}
+              >
+                ↓ Download Report
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Score hero */}
@@ -367,7 +411,11 @@ export function AuditResultsPage() {
           <h2 style={s.sectionTitle}>Category Breakdown</h2>
           <div style={s.catGrid}>
             {catScores.map((cs) => (
-              <CategoryCard key={cs.category} cs={cs} />
+              <CategoryCard
+                key={cs.category}
+                cs={cs}
+                finding={findings.find((f) => f.category === cs.category)}
+              />
             ))}
           </div>
         </section>
@@ -385,7 +433,7 @@ export function AuditResultsPage() {
           )}
 
           <div style={s.catGrid}>
-            {(isUnlocked ? allRecs : previewRecs).map((rec, i) => (
+            {displayedRecs.map((rec, i) => (
               <RecommendationCard key={i} rec={rec} />
             ))}
           </div>
@@ -418,6 +466,12 @@ const s = {
     flexWrap: 'wrap' as const,
     gap: '0.5rem',
     marginBottom: '2.5rem',
+  },
+  headerRight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+    flexWrap: 'wrap' as const,
   },
   link: {
     color: colors.secondary,
@@ -533,10 +587,31 @@ const s = {
     fontSize: '0.875rem',
     color: colors.textMuted,
     lineHeight: 1.6,
-    padding: '0 1.25rem 1rem',
     margin: 0,
+  },
+  catFinding: {
+    fontSize: '0.825rem',
+    color: colors.textDim,
+    lineHeight: 1.5,
+    margin: '0.625rem 0 0',
+    borderTop: `1px solid ${colors.border}`,
+    paddingTop: '0.625rem',
+  },
+  catBody: {
+    padding: '0 1.25rem 1rem',
     borderTop: `1px solid ${colors.border}`,
     paddingTop: '0.875rem',
+  },
+  pdfButton: {
+    background: 'none',
+    border: `1px solid ${colors.border}`,
+    color: colors.secondary,
+    fontFamily: fonts.body,
+    fontSize: '0.8rem',
+    padding: '0.3rem 0.75rem',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap' as const,
   },
   barTrack: {
     height: '6px',
