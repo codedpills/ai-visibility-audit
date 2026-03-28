@@ -1,20 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
+import cookie from '@fastify/cookie';
+import { SignJWT } from 'jose';
 import { auditsRoute } from './audits.js';
 
 // Inject mock deps so tests don't need a real DB or queue
 const mockEnqueueAudit = vi.fn();
 const mockGetAudit = vi.fn();
+const mockCheckAnon = vi.fn();
+const mockCheckRegistered = vi.fn();
+const mockIncrementUserAuditCount = vi.fn();
+
+const JWT_SECRET = 'test-secret';
 
 async function buildApp() {
   const app = Fastify({ logger: false });
+  app.register(cookie);
   app.register(auditsRoute, {
     enqueueAudit: mockEnqueueAudit,
     getAudit: mockGetAudit,
-    jwtSecret: 'test-secret',
+    jwtSecret: JWT_SECRET,
+    checkAnon: mockCheckAnon,
+    checkRegistered: mockCheckRegistered,
+    incrementUserAuditCount: mockIncrementUserAuditCount,
   });
   await app.ready();
   return app;
+}
+
+async function makeSessionCookie(userId: string) {
+  const secret = new TextEncoder().encode(JWT_SECRET);
+  const token = await new SignJWT({ sub: userId })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setExpirationTime('7d')
+    .sign(secret);
+  return `session=${token}`;
 }
 
 describe('POST /audits', () => {
@@ -22,6 +42,9 @@ describe('POST /audits', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockCheckAnon.mockResolvedValue({ allowed: true });
+    mockCheckRegistered.mockResolvedValue({ allowed: true });
+    mockIncrementUserAuditCount.mockResolvedValue(undefined);
     app = await buildApp();
   });
 
@@ -66,6 +89,86 @@ describe('POST /audits', () => {
       payload: { url: 'https://acme.com' },
     });
     expect(mockEnqueueAudit).toHaveBeenCalledWith('https://acme.com', null);
+  });
+
+  it('returns 429 when anon daily limit is exceeded', async () => {
+    mockCheckAnon.mockResolvedValue({
+      allowed: false,
+      resetsAt: '2026-03-29T00:00:00.000Z',
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { 'x-anon-id': 'anon-uuid-123' },
+      payload: { url: 'https://example.com' },
+    });
+    expect(res.statusCode).toBe(429);
+    expect(res.json().resetsAt).toBe('2026-03-29T00:00:00.000Z');
+  });
+
+  it('passes anonId header to checkAnon', async () => {
+    mockEnqueueAudit.mockResolvedValue('a1');
+    await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { 'x-anon-id': 'my-anon-id' },
+      payload: { url: 'https://example.com' },
+    });
+    expect(mockCheckAnon).toHaveBeenCalledWith(
+      'my-anon-id',
+      expect.any(String)
+    );
+  });
+
+  it('returns 429 when registered monthly limit is exceeded', async () => {
+    mockCheckRegistered.mockResolvedValue({
+      allowed: false,
+      resetsAt: '2026-04-01T00:00:00.000Z',
+    });
+    const cookie = await makeSessionCookie('user-1');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { cookie },
+      payload: { url: 'https://example.com' },
+    });
+    expect(res.statusCode).toBe(429);
+    expect(res.json().resetsAt).toBe('2026-04-01T00:00:00.000Z');
+  });
+
+  it('calls checkRegistered (not checkAnon) for authenticated users', async () => {
+    mockEnqueueAudit.mockResolvedValue('a2');
+    const cookie = await makeSessionCookie('user-2');
+    await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { cookie },
+      payload: { url: 'https://example.com' },
+    });
+    expect(mockCheckRegistered).toHaveBeenCalledWith('user-2');
+    expect(mockCheckAnon).not.toHaveBeenCalled();
+  });
+
+  it('increments audit count for registered user on success', async () => {
+    mockEnqueueAudit.mockResolvedValue('a3');
+    const cookie = await makeSessionCookie('user-3');
+    await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { cookie },
+      payload: { url: 'https://example.com' },
+    });
+    expect(mockIncrementUserAuditCount).toHaveBeenCalledWith('user-3');
+  });
+
+  it('does not increment audit count for anonymous users', async () => {
+    mockEnqueueAudit.mockResolvedValue('a4');
+    await app.inject({
+      method: 'POST',
+      url: '/audits',
+      payload: { url: 'https://example.com' },
+    });
+    expect(mockIncrementUserAuditCount).not.toHaveBeenCalled();
   });
 });
 

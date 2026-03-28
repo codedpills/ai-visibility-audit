@@ -6,8 +6,13 @@ import { auditsRoute } from './routes/audits.js';
 import { emailRoute } from './routes/email.js';
 import { authRoute } from './routes/auth.js';
 import { kofiRoute } from './routes/kofi.js';
+import { usersRoute } from './routes/users.js';
 import { createAuditQueue } from './queue/audit-queue.js';
-import { createAuditRecord, getAuditById } from './db/audits.js';
+import {
+  createAuditRecord,
+  getAuditById,
+  getAuditsByUserId,
+} from './db/audits.js';
 import { saveAuditEmail } from './db/emails.js';
 import {
   upsertUser,
@@ -16,8 +21,13 @@ import {
   saveMagicLink,
   verifyMagicLink,
   recordDonation,
+  incrementAuditCount,
 } from './db/users.js';
 import { generateMagicToken, hashToken } from './auth/magic-link.js';
+import {
+  checkAnonLimit,
+  checkRegisteredLimit,
+} from './middleware/rate-limit.js';
 import type { Kysely } from 'kysely';
 import type { Database } from './types/database.js';
 import type { ConnectionOptions } from 'bullmq';
@@ -28,7 +38,7 @@ export function buildServer(
   db: Kysely<Database>,
   redisClient: ConnectionOptions,
   emailService?: EmailService,
-  _redis?: Redis
+  redis?: Redis
 ) {
   const app = Fastify({
     logger: {
@@ -39,6 +49,7 @@ export function buildServer(
   const auditQueue = createAuditQueue(redisClient);
   const jwtSecret = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
   const monthlyLimit = parseInt(process.env.MONTHLY_AUDIT_LIMIT ?? '3', 10);
+  const anonDailyLimit = parseInt(process.env.ANON_DAILY_LIMIT ?? '1', 10);
   const webBaseUrl = process.env.WEB_BASE_URL ?? 'http://localhost:5173';
 
   app.register(cors);
@@ -52,6 +63,10 @@ export function buildServer(
     },
     getAudit: (id: string) => getAuditById(db, id),
     jwtSecret,
+    checkAnon: (anonId, ip) =>
+      checkAnonLimit(redis!, anonId, ip, undefined, anonDailyLimit),
+    checkRegistered: (userId) => checkRegisteredLimit(db, userId, monthlyLimit),
+    incrementUserAuditCount: (userId) => incrementAuditCount(db, userId),
   });
 
   app.register(emailRoute, {
@@ -85,6 +100,11 @@ export function buildServer(
     recordDonation: (_, userId, points) => recordDonation(db, userId, points),
     verificationToken: process.env.KOFI_VERIFICATION_TOKEN ?? '',
     db,
+  });
+
+  app.register(usersRoute, {
+    jwtSecret,
+    getAuditsByUser: (userId) => getAuditsByUserId(db, userId),
   });
 
   return app;

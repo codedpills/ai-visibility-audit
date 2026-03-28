@@ -100,3 +100,33 @@ export async function getAuditById(db: Kysely<Database>, auditId: string) {
         : row.recommendations,
   };
 }
+
+export async function getAuditsByUserId(
+  db: Kysely<Database>,
+  userId: string
+): Promise<
+  Array<{
+    id: string;
+    url: string;
+    status: string;
+    geo_score: number | null;
+    expires_at: Date | null;
+    created_at: Date;
+  }>
+> {
+  const rows = await db
+    .selectFrom('audits')
+    .select(['id', 'url', 'status', 'geo_score', 'expires_at', 'created_at'])
+    .where('user_id', '=', userId)
+    .orderBy('created_at', 'desc')
+    .execute();
+
+  return rows as Array<{
+    id: string;
+    url: string;
+    status: string;
+    geo_score: number | null;
+    expires_at: Date | null;
+    created_at: Date;
+  }>;
+}

@@ -17,6 +17,9 @@ export function NavBar() {
             <span style={s.usageText} title="Audits used this month">
               {user.auditsThisMonth}/{user.monthlyLimit} this month
             </span>
+            <Link to="/my-audits" style={s.navLink}>
+              My audits
+            </Link>
             <span style={s.email}>{user.email}</span>
             <button style={s.logoutBtn} onClick={() => void logout()}>
               Log out
@@ -91,5 +94,11 @@ const s = {
     padding: '0.3rem 0.75rem',
     border: `1px solid ${colors.borderAccent}`,
     borderRadius: '6px',
+  },
+  navLink: {
+    fontSize: '0.8rem',
+    fontWeight: 500,
+    color: colors.secondary,
+    textDecoration: 'none',
   },
 } as const;

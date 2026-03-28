@@ -166,6 +166,26 @@ export async function getAudit(auditId: string): Promise<AuditResponse> {
   return res.json() as Promise<AuditResponse>;
 }
 
+// ─── My Audits ────────────────────────────────────────────────────────────────
+
+export interface AuditListItem {
+  id: string;
+  url: string;
+  status: string;
+  geoScore: number | null;
+  expiresAt: string | null;
+  createdAt: string;
+}
+
+export async function getMyAudits(): Promise<AuditListItem[]> {
+  const res = await fetch(`${API_BASE}/users/me/audits`, {
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to fetch audits');
+  const data = (await res.json()) as { audits: AuditListItem[] };
+  return data.audits;
+}
+
 export async function submitEmail(
   auditId: string,
   email: string

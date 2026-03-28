@@ -4,7 +4,9 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../types/database.js';
 import { resetMonthlyCountIfNeeded } from '../db/users.js';
 
-type RateLimitResult = { allowed: true } | { allowed: false; resetsAt: string };
+export type RateLimitResult =
+  | { allowed: true }
+  | { allowed: false; resetsAt: string };
 
 function hashIp(ip: string): string {
   return createHash('sha256').update(ip).digest('hex').slice(0, 16);
@@ -25,7 +27,8 @@ export async function checkAnonLimit(
   redis: Redis,
   anonId: string,
   ip: string,
-  hashIpFn: (ip: string) => string = hashIp
+  hashIpFn: (ip: string) => string = hashIp,
+  limit: number = 1
 ): Promise<RateLimitResult> {
   const today = todayKey();
   const ipHash = hashIpFn(ip);
@@ -40,8 +43,8 @@ export async function checkAnonLimit(
   ]);
 
   if (
-    (anonCount && parseInt(anonCount) >= 1) ||
-    (ipCount && parseInt(ipCount) >= 1)
+    (anonCount && parseInt(anonCount) >= limit) ||
+    (ipCount && parseInt(ipCount) >= limit)
   ) {
     const midnight = new Date();
     midnight.setUTCHours(24, 0, 0, 0);

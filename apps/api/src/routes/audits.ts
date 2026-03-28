@@ -1,5 +1,6 @@
 import { jwtVerify } from 'jose';
 import type { FastifyPluginAsync } from 'fastify';
+import type { RateLimitResult } from '../middleware/rate-limit.js';
 
 export interface AuditRowResponse {
   id: string;
@@ -18,6 +19,9 @@ export interface AuditRouteDeps {
   enqueueAudit: (url: string, userId?: string | null) => Promise<string>;
   getAudit: (id: string) => Promise<AuditRowResponse | null>;
   jwtSecret: string;
+  checkAnon: (anonId: string, ip: string) => Promise<RateLimitResult>;
+  checkRegistered: (userId: string) => Promise<RateLimitResult>;
+  incrementUserAuditCount: (userId: string) => Promise<void>;
 }
 
 const URL_RE = /^https?:\/\/.+\..+/;
@@ -26,7 +30,14 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
   fastify,
   opts
 ) => {
-  const { enqueueAudit, getAudit, jwtSecret } = opts;
+  const {
+    enqueueAudit,
+    getAudit,
+    jwtSecret,
+    checkAnon,
+    checkRegistered,
+    incrementUserAuditCount,
+  } = opts;
   const secretKey = new TextEncoder().encode(jwtSecret);
 
   fastify.post<{ Body: { url?: string } }>(
@@ -40,7 +51,7 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
           .send({ error: 'A valid http/https url is required.' });
       }
 
-      // Optionally resolve the logged-in user for extended retention.
+      // Resolve the logged-in user for rate limiting and retention.
       let userId: string | null = null;
       const token = request.cookies?.['session'];
       if (token) {
@@ -52,7 +63,34 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
         }
       }
 
+      // Enforce rate limit
+      if (userId) {
+        const limit = await checkRegistered(userId);
+        if (!limit.allowed) {
+          return reply.status(429).send({
+            error: 'Monthly audit limit reached.',
+            resetsAt: limit.resetsAt,
+          });
+        }
+      } else {
+        const anonId = (request.headers['x-anon-id'] as string) ?? '';
+        const ip = request.ip;
+        const limit = await checkAnon(anonId, ip);
+        if (!limit.allowed) {
+          return reply.status(429).send({
+            error: 'Daily audit limit reached. Try again tomorrow.',
+            resetsAt: limit.resetsAt,
+          });
+        }
+      }
+
       const auditId = await enqueueAudit(url, userId);
+
+      // Track usage for registered users
+      if (userId) {
+        await incrementUserAuditCount(userId);
+      }
+
       return reply.status(201).send({ auditId, status: 'pending' });
     }
   );

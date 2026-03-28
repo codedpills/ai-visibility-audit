@@ -6,6 +6,7 @@ import { AuditProgressPage } from './pages/AuditProgressPage';
 import { AuditResultsPage } from './pages/AuditResultsPage';
 import { LoginPage } from './pages/LoginPage';
 import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
+import { MyAuditsPage } from './pages/MyAuditsPage';
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/audits/:id/results" element={<AuditResultsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/verify" element={<MagicLinkVerifyPage />} />
+          <Route path="/my-audits" element={<MyAuditsPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
