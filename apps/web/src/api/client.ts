@@ -63,10 +63,86 @@ export interface RecommendationResponse {
   snippet?: string;
 }
 
+// ─── Auth types ───────────────────────────────────────────────────────────────
+
+export interface MeResponse {
+  id: string;
+  email: string;
+  auditsThisMonth: number;
+  monthlyLimit: number;
+  monthResetAt: string;
+  donated: boolean;
+  donationPoints: number;
+}
+
+// ─── Anonymous ID ─────────────────────────────────────────────────────────────
+
+/** Returns a stable UUID stored in localStorage, used for anon rate-limit keys. */
+export function getAnonId(): string {
+  const KEY = 'anon_id';
+  let id =
+    typeof localStorage !== 'undefined' ? localStorage.getItem(KEY) : null;
+  if (!id) {
+    id = crypto.randomUUID();
+    if (typeof localStorage !== 'undefined') localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
+// ─── Auth API ─────────────────────────────────────────────────────────────────
+
+export async function sendMagicLink(email: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/auth/magic-link`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ email }),
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      (body as { error?: string }).error ?? 'Failed to send magic link'
+    );
+  }
+}
+
+export async function verifyMagicLink(token: string): Promise<void> {
+  const res = await fetch(
+    `${API_BASE}/auth/verify?token=${encodeURIComponent(token)}`,
+    { credentials: 'include' }
+  );
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(
+      (body as { error?: string }).error ?? 'Invalid or expired link'
+    );
+  }
+}
+
+export async function getMe(): Promise<MeResponse | null> {
+  const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+  if (res.status === 401) return null;
+  if (!res.ok) throw new Error('Failed to fetch user');
+  return res.json() as Promise<MeResponse>;
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${API_BASE}/auth/logout`, {
+    method: 'POST',
+    credentials: 'include',
+  });
+}
+
+// ─── Audits ───────────────────────────────────────────────────────────────────
+
 export async function submitAudit(url: string): Promise<{ auditId: string }> {
   const res = await fetch(`${API_BASE}/audits`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Anon-ID': getAnonId(),
+    },
+    credentials: 'include',
     body: JSON.stringify({ url }),
   });
 

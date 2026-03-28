@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { submitAudit } from '../api/client';
+import { useAuth } from '../auth/AuthContext';
 import { colors, fonts } from '../design/tokens';
 
 const HOW_IT_WORKS = [
@@ -51,6 +52,7 @@ const FAQS = [
 
 export function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -118,6 +120,22 @@ export function HomePage() {
 
         {error && <p style={s.error}>{error}</p>}
 
+        {/* Usage / rate-limit info */}
+        {user ? (
+          <p style={s.usageNote}>
+            Signed in as <strong>{user.email}</strong> — {user.auditsThisMonth}/
+            {user.monthlyLimit} audits used this month.
+          </p>
+        ) : (
+          <p style={s.usageNote}>
+            <a href="/login" style={s.inlineLink}>
+              Sign in
+            </a>{' '}
+            to get 3 audits/month with 30-day history. Anonymous users get
+            1/day.
+          </p>
+        )}
+
         <div style={s.signals}>
           {[
             'Entity Definition',
@@ -167,6 +185,22 @@ export function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Ko-fi donate button */}
+        <section style={s.kofiSection} aria-label="Support this project">
+          <p style={s.kofiText}>
+            This tool is completely free. If it helped you, consider supporting
+            it.
+          </p>
+          <a
+            href="https://ko-fi.com/aivisibilityaudit"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={s.kofiBtn}
+          >
+            ☕ Support on Ko-fi
+          </a>
+        </section>
       </div>
     </main>
   );
@@ -182,7 +216,7 @@ const s = {
     alignItems: 'center',
     justifyContent: 'center',
     fontFamily: fonts.body,
-    padding: '2rem',
+    padding: '5rem 2rem 4rem', // top padding clears the fixed NavBar
     textAlign: 'center' as const,
   },
   content: {
@@ -247,6 +281,16 @@ const s = {
     marginTop: '1rem',
     color: colors.error,
     fontSize: '0.9rem',
+  },
+  usageNote: {
+    marginTop: '1rem',
+    fontSize: '0.825rem',
+    color: colors.textDim,
+  },
+  inlineLink: {
+    color: colors.secondary,
+    textDecoration: 'none',
+    fontWeight: 500,
   },
   signals: {
     marginTop: '3rem',
@@ -340,5 +384,29 @@ const s = {
     color: colors.textMuted,
     lineHeight: 1.6,
     margin: 0,
+  },
+  // Ko-fi
+  kofiSection: {
+    marginTop: '3.5rem',
+    paddingTop: '2.5rem',
+    borderTop: `1px solid ${colors.border}`,
+    textAlign: 'center' as const,
+  },
+  kofiText: {
+    fontSize: '0.875rem',
+    color: colors.textMuted,
+    marginBottom: '1rem',
+  },
+  kofiBtn: {
+    display: 'inline-block',
+    padding: '0.625rem 1.25rem',
+    borderRadius: '8px',
+    background: '#ff5f5f',
+    color: '#fff',
+    fontFamily: fonts.body,
+    fontWeight: 600,
+    fontSize: '0.9rem',
+    textDecoration: 'none',
+    transition: 'opacity 0.2s',
   },
 } as const;
