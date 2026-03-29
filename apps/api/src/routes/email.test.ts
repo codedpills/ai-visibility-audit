@@ -35,6 +35,8 @@ const defaultDeps = () => ({
   hashToken: vi.fn().mockReturnValue('hash123'),
   saveMagicLink: vi.fn().mockResolvedValue(undefined),
   sendResultsMagicLinkEmail: vi.fn().mockResolvedValue(undefined),
+  linkAuditToUser: vi.fn().mockResolvedValue(true),
+  incrementUserAuditCount: vi.fn().mockResolvedValue(undefined),
   webBaseUrl: 'https://example.com',
 });
 
@@ -127,5 +129,50 @@ describe('POST /audits/:id/email', () => {
       'https://app.example.com/auth/verify?token=mytoken'
     );
     expect(linkArg).toContain(encodeURIComponent('/audits/audit-456/results'));
+  });
+
+  it('links the audit to the user after email submission', async () => {
+    const linkAuditToUser = vi.fn().mockResolvedValue(true);
+    const upsertUser = vi
+      .fn()
+      .mockResolvedValue({ id: 'u99', email: 'user@example.com' });
+    const app = buildApp({ upsertUser, linkAuditToUser });
+    await app.inject({
+      method: 'POST',
+      url: '/audits/audit-789/email',
+      body: { email: 'user@example.com' },
+    });
+    expect(linkAuditToUser).toHaveBeenCalledWith('audit-789', 'u99');
+  });
+
+  it('increments audit count when audit is newly linked', async () => {
+    const linkAuditToUser = vi.fn().mockResolvedValue(true);
+    const incrementUserAuditCount = vi.fn().mockResolvedValue(undefined);
+    const upsertUser = vi
+      .fn()
+      .mockResolvedValue({ id: 'u99', email: 'user@example.com' });
+    const app = buildApp({
+      upsertUser,
+      linkAuditToUser,
+      incrementUserAuditCount,
+    });
+    await app.inject({
+      method: 'POST',
+      url: '/audits/audit-789/email',
+      body: { email: 'user@example.com' },
+    });
+    expect(incrementUserAuditCount).toHaveBeenCalledWith('u99');
+  });
+
+  it('does not increment audit count if audit was already linked', async () => {
+    const linkAuditToUser = vi.fn().mockResolvedValue(false);
+    const incrementUserAuditCount = vi.fn().mockResolvedValue(undefined);
+    const app = buildApp({ linkAuditToUser, incrementUserAuditCount });
+    await app.inject({
+      method: 'POST',
+      url: '/audits/audit-789/email',
+      body: { email: 'user@example.com' },
+    });
+    expect(incrementUserAuditCount).not.toHaveBeenCalled();
   });
 });

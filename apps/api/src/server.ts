@@ -12,6 +12,7 @@ import {
   createAuditRecord,
   getAuditById,
   getAuditsByUserId,
+  linkAuditToUser,
 } from './db/audits.js';
 import { saveAuditEmail } from './db/emails.js';
 import {
@@ -84,6 +85,10 @@ export function buildServer(
     sendResultsMagicLinkEmail: async (email: string, link: string) => {
       await emailService?.sendResultsMagicLinkEmail(email, link);
     },
+    linkAuditToUser: (auditId: string, userId: string) =>
+      linkAuditToUser(db, auditId, userId),
+    incrementUserAuditCount: (userId: string) =>
+      incrementAuditCount(db, userId),
     webBaseUrl,
   });
 

@@ -119,11 +119,14 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 function CategoryCard({
   cs,
   finding,
+  forceOpen,
 }: {
   cs: CategoryScoreResponse;
   finding?: FindingResponse;
+  forceOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
+  const isOpen = forceOpen || open;
   const pct = Math.round((cs.score / cs.maxScore) * 100);
   const color = scoreColor(cs.score, cs.maxScore);
   const description = CATEGORY_DESCRIPTIONS[cs.category];
@@ -134,7 +137,7 @@ function CategoryCard({
       <button
         style={s.catButton}
         onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
+        aria-expanded={isOpen}
       >
         <div style={s.catHeaderInner}>
           <span style={s.catLabel}>{cs.label}</span>
@@ -146,7 +149,7 @@ function CategoryCard({
             <span
               style={{
                 ...s.catChevron,
-                transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+                transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
               }}
             >
               ▾
@@ -159,7 +162,7 @@ function CategoryCard({
       </button>
 
       {/* Accordion body */}
-      {open && (
+      {isOpen && (
         <div style={s.catBody}>
           {description && <p style={s.catDescription}>{description}</p>}
           {finding && finding.details && (
@@ -180,8 +183,15 @@ const PRIORITY_COLOR: Record<string, string> = {
   low: '#22c55e',
 };
 
-function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
+function RecommendationCard({
+  rec,
+  forceOpen,
+}: {
+  rec: RecommendationResponse;
+  forceOpen?: boolean;
+}) {
   const [open, setOpen] = useState(false);
+  const isOpen = forceOpen || open;
   return (
     <div style={s.recCard}>
       <div style={s.recHeader}>
@@ -200,9 +210,9 @@ function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
       {rec.snippet && (
         <>
           <button style={s.snippetToggle} onClick={() => setOpen((v) => !v)}>
-            {open ? 'Hide snippet ↑' : 'Show code snippet ↓'}
+            {isOpen ? 'Hide snippet ↑' : 'Show code snippet ↓'}
           </button>
-          {open && <pre style={s.snippet}>{rec.snippet}</pre>}
+          {isOpen && <pre style={s.snippet}>{rec.snippet}</pre>}
         </>
       )}
     </div>
@@ -304,6 +314,7 @@ export function AuditResultsPage() {
   const { user } = useAuth();
   const [audit, setAudit] = useState<AuditResponse | null>(null);
   const [error, setError] = useState('');
+  const [printMode, setPrintMode] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -382,7 +393,13 @@ export function AuditResultsPage() {
               <button
                 className="no-print"
                 style={s.pdfButton}
-                onClick={() => window.print()}
+                onClick={() => {
+                  setPrintMode(true);
+                  setTimeout(() => {
+                    window.print();
+                    setPrintMode(false);
+                  }, 300);
+                }}
               >
                 ↓ Download Report
               </button>
@@ -419,6 +436,7 @@ export function AuditResultsPage() {
                 key={cs.category}
                 cs={cs}
                 finding={findings.find((f) => f.category === cs.category)}
+                forceOpen={printMode}
               />
             ))}
           </div>
@@ -438,7 +456,7 @@ export function AuditResultsPage() {
 
           <div style={s.catGrid}>
             {displayedRecs.map((rec, i) => (
-              <RecommendationCard key={i} rec={rec} />
+              <RecommendationCard key={i} rec={rec} forceOpen={printMode} />
             ))}
           </div>
 

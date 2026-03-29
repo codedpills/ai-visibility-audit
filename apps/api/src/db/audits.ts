@@ -101,6 +101,23 @@ export async function getAuditById(db: Kysely<Database>, auditId: string) {
   };
 }
 
+/** Links an anonymous audit to a user. Only updates if user_id is currently NULL.
+ *  Returns true if the row was updated (first call), false if already linked. */
+export async function linkAuditToUser(
+  db: Kysely<Database>,
+  auditId: string,
+  userId: string
+): Promise<boolean> {
+  const result = await db
+    .updateTable('audits')
+    .set({ user_id: userId })
+    .where('id', '=', auditId)
+    .where('user_id', 'is', null)
+    .executeTakeFirst();
+
+  return (result.numUpdatedRows ?? BigInt(0)) > BigInt(0);
+}
+
 export async function getAuditsByUserId(
   db: Kysely<Database>,
   userId: string

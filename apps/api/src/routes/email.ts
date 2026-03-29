@@ -17,6 +17,9 @@ export interface EmailRouteDeps {
     expiresAt: Date
   ) => Promise<void>;
   sendResultsMagicLinkEmail: (email: string, link: string) => Promise<void>;
+  /** Links the audit to the user. Returns true if newly linked, false if already linked. */
+  linkAuditToUser: (auditId: string, userId: string) => Promise<boolean>;
+  incrementUserAuditCount: (userId: string) => Promise<void>;
   webBaseUrl: string;
 }
 
@@ -32,6 +35,8 @@ export const emailRoute: FastifyPluginAsync<EmailRouteDeps> = async (
     hashToken,
     saveMagicLink,
     sendResultsMagicLinkEmail,
+    linkAuditToUser,
+    incrementUserAuditCount,
     webBaseUrl,
   } = opts;
 
@@ -55,6 +60,13 @@ export const emailRoute: FastifyPluginAsync<EmailRouteDeps> = async (
 
       // Upsert user + create magic link that redirects back to this audit's results
       const user = await upsertUser(email);
+
+      // Link the anonymous audit to this user (idempotent — only updates if user_id IS NULL)
+      const linked = await linkAuditToUser(request.params.id, user.id);
+      if (linked) {
+        await incrementUserAuditCount(user.id);
+      }
+
       const token = generateToken();
       const hash = hashToken(token);
       const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
