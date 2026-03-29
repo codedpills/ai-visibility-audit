@@ -142,10 +142,14 @@ export const authRoute: FastifyPluginAsync<AuthRouteDeps> = async (
   });
 
   fastify.post('/auth/logout', async (_req, reply) => {
+    const isProd = process.env.NODE_ENV === 'production';
     reply.setCookie(COOKIE_NAME, '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: isProd,
+      // Must match the sameSite used when the cookie was set (SameSite=None in
+      // production for cross-origin Railway subdomains), otherwise browsers
+      // treat them as different cookies and won't clear the original.
+      sameSite: isProd ? 'none' : 'lax',
       maxAge: 0,
       path: '/',
     });
