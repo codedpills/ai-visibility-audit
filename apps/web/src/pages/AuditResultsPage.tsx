@@ -209,15 +209,10 @@ function RecommendationCard({ rec }: { rec: RecommendationResponse }) {
   );
 }
 
-function EmailGate({
-  auditId,
-  onUnlock,
-}: {
-  auditId: string;
-  onUnlock: (recs: RecommendationResponse[]) => void;
-}) {
+function EmailGate({ auditId }: { auditId: string }) {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
@@ -225,13 +220,26 @@ function EmailGate({
     setError('');
     setLoading(true);
     try {
-      const data = await submitEmail(auditId, email);
-      onUnlock(data.recommendations);
+      await submitEmail(auditId, email);
+      setSent(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setLoading(false);
     }
+  }
+
+  if (sent) {
+    return (
+      <div style={s.gate}>
+        <h3 style={s.gateTitle}>Check your inbox ✉️</h3>
+        <p style={s.gateDesc}>
+          We've sent a login link to <strong>{email}</strong>. Click it to view
+          your full report with all recommendations and code examples. The link
+          expires in 15 minutes.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -296,9 +304,6 @@ export function AuditResultsPage() {
   const { user } = useAuth();
   const [audit, setAudit] = useState<AuditResponse | null>(null);
   const [error, setError] = useState('');
-  const [unlockedRecs, setUnlockedRecs] = useState<
-    RecommendationResponse[] | null
-  >(null);
 
   useEffect(() => {
     if (!id) return;
@@ -344,12 +349,11 @@ export function AuditResultsPage() {
   const grade = scoreGrade(geoScore);
   const catScores = audit.categoryScores ?? [];
   const findings = audit.findings ?? [];
-  const allRecs = unlockedRecs ?? audit.recommendations ?? [];
+  const allRecs = audit.recommendations ?? [];
   const previewRecs = allRecs
     .filter((r) => r.priority === 'critical')
     .slice(0, 3);
-  // Logged-in users always see everything; anon users see top 3 critical until they submit email
-  const isUnlocked = isLoggedIn || unlockedRecs !== null;
+  const isUnlocked = isLoggedIn;
   const displayedRecs = isUnlocked ? allRecs : previewRecs;
 
   return (
@@ -438,9 +442,7 @@ export function AuditResultsPage() {
             ))}
           </div>
 
-          {!isUnlocked && id && (
-            <EmailGate auditId={id} onUnlock={setUnlockedRecs} />
-          )}
+          {!isUnlocked && id && <EmailGate auditId={id} />}
         </section>
       </div>
     </main>

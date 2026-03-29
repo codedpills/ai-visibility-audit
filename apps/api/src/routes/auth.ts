@@ -83,18 +83,18 @@ export const authRoute: FastifyPluginAsync<AuthRouteDeps> = async (
       const hash = hashToken(token);
       const user = await verifyMagicLink(getDb(), hash);
       if (!user) {
-        return reply
-          .status(401)
-          .send({
-            error: 'Invalid or expired link. Please request a new one.',
-          });
+        return reply.status(401).send({
+          error: 'Invalid or expired link. Please request a new one.',
+        });
       }
 
       const jwt = await signJwt({ sub: user.id, email: user.email }, jwtSecret);
+      const isProd = process.env.NODE_ENV === 'production';
       reply.setCookie(COOKIE_NAME, jwt, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: isProd,
+        // SameSite=None required for cross-origin credentials (web and API on different Railway subdomains)
+        sameSite: isProd ? 'none' : 'lax',
         maxAge: 60 * 60 * 24 * 7,
         path: '/',
       });
