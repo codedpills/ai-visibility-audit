@@ -206,7 +206,7 @@ export function HomePage() {
           <p style={s.footerText}>
             Found a bug or have an idea?{' '}
             <a
-              href="https://github.com/codedpills/ai-visibility-audit/issues/new?template=bug_report.md"
+              href="https://github.com/codedpills/ai-visibility-audit/issues/new?template=bug_report.yml"
               style={s.footerLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -215,7 +215,7 @@ export function HomePage() {
             </a>
             {' · '}
             <a
-              href="https://github.com/codedpills/ai-visibility-audit/issues/new?template=feature_request.md"
+              href="https://github.com/codedpills/ai-visibility-audit/issues/new?template=feature_request.yml"
               style={s.footerLink}
               target="_blank"
               rel="noopener noreferrer"

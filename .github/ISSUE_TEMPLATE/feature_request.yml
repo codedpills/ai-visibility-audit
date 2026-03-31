@@ -1,0 +1,53 @@
+name: Feature request
+description: Suggest an idea or improvement
+title: '[Feature] '
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea that would make AI Visibility Audit better? We'd love to hear it!
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the problem or gap this feature would address.
+      placeholder: I find it frustrating when…
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe what you'd like to see. Be as specific as you can.
+      placeholder: I'd like…
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you've considered
+      description: Have you thought of other ways to solve this? Why didn't they work?
+      placeholder: I also considered…
+
+  - type: dropdown
+    id: audience
+    attributes:
+      label: Who would benefit?
+      options:
+        - All users
+        - Registered (logged-in) users only
+        - Anonymous users only
+        - A specific use case (explain below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Anything else?
+      description: Mockups, links, related issues, or any extra context.
+      placeholder: Add any extra context, screenshots, or mockups here…
