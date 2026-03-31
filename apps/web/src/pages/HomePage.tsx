@@ -200,6 +200,30 @@ export function HomePage() {
             ))}
           </div>
         </section>
+
+        {/* Footer */}
+        <footer style={s.footer}>
+          <p style={s.footerText}>
+            Found a bug or have an idea?{' '}
+            <a
+              href="https://github.com/codedpills/ai-visibility-audit/issues/new?template=bug_report.md"
+              style={s.footerLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Report a bug
+            </a>
+            {' · '}
+            <a
+              href="https://github.com/codedpills/ai-visibility-audit/issues/new?template=feature_request.md"
+              style={s.footerLink}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Request a feature
+            </a>
+          </p>
+        </footer>
       </div>
     </main>
   );
@@ -383,6 +407,27 @@ const s = {
     color: colors.textMuted,
     lineHeight: 1.6,
     margin: 0,
+  },
+  // Footer
+  footer: {
+    marginTop: '3.5rem',
+    paddingTop: '1.5rem',
+    borderTop: `1px solid ${colors.border}`,
+    textAlign: 'center' as const,
+    width: '100%',
+  },
+  footerText: {
+    margin: 0,
+    fontSize: '0.8125rem',
+    color: colors.textDim,
+    lineHeight: 1.6,
+  },
+  footerLink: {
+    color: colors.textMuted,
+    textDecoration: 'none',
+    borderBottom: `1px solid ${colors.border}`,
+    paddingBottom: '1px',
+    transition: 'color 0.15s',
   },
   // Ko-fi fixed widget
   kofiWidget: {
