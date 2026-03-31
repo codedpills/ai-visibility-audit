@@ -12,14 +12,14 @@ function hashIp(ip: string): string {
   return createHash('sha256').update(ip).digest('hex').slice(0, 16);
 }
 
-function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+function thisMonthKey(): string {
+  return new Date().toISOString().slice(0, 7); // YYYY-MM
 }
 
 /**
- * Checks the anonymous daily rate limit using two independent Redis keys:
+ * Checks the anonymous monthly rate limit using two independent Redis keys:
  * one keyed by the browser UUID (anon_id) and one by the SHA-256-truncated IP.
- * Either key hitting 1 on previous calls blocks the request.
+ * Either key hitting the limit on previous calls blocks the request.
  *
  * @param hashIpFn — injectable hasher for testing; defaults to the real SHA-256 impl
  */
@@ -30,11 +30,11 @@ export async function checkAnonLimit(
   hashIpFn: (ip: string) => string = hashIp,
   limit: number = 1
 ): Promise<RateLimitResult> {
-  const today = todayKey();
+  const month = thisMonthKey();
   const ipHash = hashIpFn(ip);
-  const anonKey = `anon:daily:${today}:id:${anonId}`;
-  const ipKey = `anon:daily:${today}:ip:${ipHash}`;
-  const ttl = 48 * 60 * 60; // 48h so keys survive to next calendar day
+  const anonKey = `anon:monthly:${month}:id:${anonId}`;
+  const ipKey = `anon:monthly:${month}:ip:${ipHash}`;
+  const ttl = 32 * 24 * 60 * 60; // 32 days — safely covers any calendar month
 
   // Read current counts before incrementing
   const [anonCount, ipCount] = await Promise.all([
@@ -46,9 +46,11 @@ export async function checkAnonLimit(
     (anonCount && parseInt(anonCount) >= limit) ||
     (ipCount && parseInt(ipCount) >= limit)
   ) {
-    const midnight = new Date();
-    midnight.setUTCHours(24, 0, 0, 0);
-    return { allowed: false, resetsAt: midnight.toISOString() };
+    const firstOfNextMonth = new Date();
+    firstOfNextMonth.setUTCDate(1);
+    firstOfNextMonth.setUTCMonth(firstOfNextMonth.getUTCMonth() + 1);
+    firstOfNextMonth.setUTCHours(0, 0, 0, 0);
+    return { allowed: false, resetsAt: firstOfNextMonth.toISOString() };
   }
 
   // Increment both keys

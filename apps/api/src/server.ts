@@ -50,7 +50,7 @@ export function buildServer(
   const auditQueue = createAuditQueue(redisClient);
   const jwtSecret = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
   const monthlyLimit = parseInt(process.env.MONTHLY_AUDIT_LIMIT ?? '3', 10);
-  const anonDailyLimit = parseInt(process.env.ANON_DAILY_LIMIT ?? '1', 10);
+  const anonMonthlyLimit = parseInt(process.env.ANON_MONTHLY_LIMIT ?? '1', 10);
   const webBaseUrl = process.env.WEB_BASE_URL ?? 'http://localhost:5173';
 
   app.register(cors, {
@@ -68,7 +68,7 @@ export function buildServer(
     getAudit: (id: string) => getAuditById(db, id),
     jwtSecret,
     checkAnon: (anonId, ip) =>
-      checkAnonLimit(redis!, anonId, ip, undefined, anonDailyLimit),
+      checkAnonLimit(redis!, anonId, ip, undefined, anonMonthlyLimit),
     checkRegistered: (userId) => checkRegisteredLimit(db, userId, monthlyLimit),
     incrementUserAuditCount: (userId) => incrementAuditCount(db, userId),
   });
@@ -119,6 +119,11 @@ export function buildServer(
   app.register(usersRoute, {
     jwtSecret,
     getAuditsByUser: (userId) => getAuditsByUserId(db, userId),
+  });
+
+  // Public config — exposes rate-limit values so the frontend can render them dynamically
+  app.get('/config', async (_req, reply) => {
+    return reply.send({ monthlyLimit, anonMonthlyLimit });
   });
 
   return app;

@@ -45,21 +45,18 @@ describe('rate-limit', () => {
       expect(result.allowed).toBe(true);
     });
 
-    it('blocks a second request on the same day for the same anon ID', async () => {
+    it('blocks a second request in the same month for the same anon ID', async () => {
       const redis = makeRedis();
       await checkAnonLimit(redis as never, 'anon-1', '1.2.3.4');
       const result = await checkAnonLimit(redis as never, 'anon-1', '1.2.3.4');
       expect(result.allowed).toBe(false);
     });
 
-    it('blocks when IP has already used its daily limit', async () => {
-      // Simulate IP already at 1, but new anonId
-      const today = new Date().toISOString().slice(0, 10);
-      const ipHash = 'sha256ofip'; // will be computed inside; use same IP
-      const redis = makeRedis({ [`anon:daily:${today}:ip:sha256ofip`]: 1 });
-      // The function should compute the hash internally — we test via real IPs
-      // by making the anon key fresh but IP already hit
-      // (We test this via the incr returning > 1 path for ip key)
+    it('blocks when IP has already used its monthly limit', async () => {
+      // Simulate IP already at 1 for this month, but a new anonId
+      const month = new Date().toISOString().slice(0, 7);
+      const ipHash = 'sha256ofip';
+      const redis = makeRedis({ [`anon:monthly:${month}:ip:sha256ofip`]: 1 });
       const result = await checkAnonLimit(
         redis as never,
         'brand-new-anon',

@@ -75,6 +75,11 @@ export interface MeResponse {
   donationPoints: number;
 }
 
+export interface LimitsResponse {
+  monthlyLimit: number;
+  anonMonthlyLimit: number;
+}
+
 // ─── Anonymous ID ─────────────────────────────────────────────────────────────
 
 /** Returns a stable UUID stored in localStorage, used for anon rate-limit keys. */
@@ -124,6 +129,12 @@ export async function getMe(): Promise<MeResponse | null> {
   if (res.status === 401) return null;
   if (!res.ok) throw new Error('Failed to fetch user');
   return res.json() as Promise<MeResponse>;
+}
+
+export async function getLimits(): Promise<LimitsResponse> {
+  const res = await fetch(`${API_BASE}/config`);
+  if (!res.ok) return { monthlyLimit: 3, anonMonthlyLimit: 1 };
+  return res.json() as Promise<LimitsResponse>;
 }
 
 export async function logout(): Promise<void> {

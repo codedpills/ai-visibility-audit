@@ -9,7 +9,7 @@ Durable decisions that apply across all phases:
 - **Monorepo layout:** `apps/web` (React + Vite + TypeScript), `apps/api` (Fastify + TypeScript), `packages/shared` (shared types)
 - **Business model:** Fully free. Monetisation via Ko-fi donations only.
 - **Access tiers:**
-  - Anonymous — 1 audit/day (IP SHA-256 + browser UUID token, two independent Redis keys)
+  - Anonymous — 1 audit/month (IP SHA-256 + browser UUID token, two independent Redis keys)
   - Registered — up to `MONTHLY_AUDIT_LIMIT` audits/month (env var, default 3), magic-link login, audit history
 - **Routes:**
   - `POST /audits` — submit URL, return `{ auditId }`

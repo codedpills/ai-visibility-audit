@@ -69,7 +69,7 @@ Traditional SEO tools measure Google rank signals, not LLM readiness. This tool 
 
 |                  | Anonymous      | Registered (email)                               |
 | ---------------- | -------------- | ------------------------------------------------ |
-| Audits           | 1 / day        | Up to `MONTHLY_AUDIT_LIMIT` / month (default: 3) |
+| Audits           | 1 / month      | Up to `MONTHLY_AUDIT_LIMIT` / month (default: 3) |
 | Recommendations  | Top 3 critical | Full list (all priorities + code snippets)       |
 | Audit history    | —              | Yes (within retention window)                    |
 | Result retention | 7 days         | 30 days                                          |

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { submitAudit } from '../api/client';
+import { submitAudit, getLimits } from '../api/client';
+import type { LimitsResponse } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { colors, fonts } from '../design/tokens';
 
@@ -38,7 +39,7 @@ const FAQS = [
   },
   {
     q: 'Is this tool really free?',
-    a: 'Yes. AI Visibility Audit is completely free. Anonymous visitors can run 1 audit per day. Registered users (email only, no password) can run up to 3 per month and keep results for 30 days. The project is donation-supported via Ko-fi.',
+    a: `Yes. AI Visibility Audit is completely free. Anonymous visitors can run 1 audit per month. Registered users (email only, no password) can run up to 3 per month and keep results for 30 days. The project is donation-supported via Ko-fi.`,
   },
   {
     q: 'What AI systems is this optimised for?',
@@ -56,6 +57,16 @@ export function HomePage() {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [limits, setLimits] = useState<LimitsResponse>({
+    monthlyLimit: 3,
+    anonMonthlyLimit: 1,
+  });
+
+  useEffect(() => {
+    getLimits()
+      .then(setLimits)
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -146,8 +157,8 @@ export function HomePage() {
             <a href="/login" style={s.inlineLink}>
               Sign in
             </a>{' '}
-            to get 3 audits/month with 30-day history. Anonymous users get
-            1/day.
+            to get {limits.monthlyLimit} audits/month with 30-day history.
+            Anonymous users get {limits.anonMonthlyLimit}/month.
           </p>
         )}
 

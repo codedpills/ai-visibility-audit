@@ -26,7 +26,7 @@ Today no dedicated tool exists to measure or improve a company's AI search visib
 
 **Access tiers:**
 
-- **Anonymous** — 1 audit/day (identified by IP + browser token); sees score, top 3 recommendations
+- **Anonymous** — 1 audit/month (identified by IP + browser token); sees score, top 3 recommendations
 - **Registered (email)** — up to 3 audits/month (configurable), full recommendations, audit history, magic-link login
 
 **Monetisation:** Donation-based via Ko-fi. Users who donate are thanked and awarded points. Points may unlock reward features in future.
