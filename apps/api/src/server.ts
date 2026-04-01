@@ -55,6 +55,8 @@ export function buildServer(
   // Support comma-separated list of allowed origins so both the custom domain
   // (e.g. https://aivisibilityaudit.cc) and the Railway deploy URL work simultaneously.
   const allowedOrigins = webBaseUrl.split(',').map((o) => o.trim());
+  // Use the first (canonical) origin for link generation in emails.
+  const primaryWebUrl = allowedOrigins[0];
 
   app.register(cors, {
     origin: (origin, cb) => {
@@ -99,7 +101,7 @@ export function buildServer(
       linkAuditToUser(db, auditId, userId),
     incrementUserAuditCount: (userId: string) =>
       incrementAuditCount(db, userId),
-    webBaseUrl,
+    webBaseUrl: primaryWebUrl,
   });
 
   // Auth routes
@@ -110,7 +112,7 @@ export function buildServer(
       saveMagicLink(db, userId, hash, expiresAt),
     verifyMagicLink: (_, hash) => verifyMagicLink(db, hash),
     sendMagicLinkEmail: async (email: string, token: string) => {
-      const link = `${webBaseUrl}/auth/verify?token=${token}`;
+      const link = `${primaryWebUrl}/auth/verify?token=${token}`;
       await emailService?.sendMagicLinkEmail?.(email, link);
     },
     generateToken: generateMagicToken,
