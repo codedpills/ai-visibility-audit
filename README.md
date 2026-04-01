@@ -1,5 +1,9 @@
 # AI Visibility Audit
 
+<p align="center">
+  <img src="apps/web/public/logos/AVA_logo.png" alt="AI Visibility Audit" width="320" />
+</p>
+
 > **Is your website invisible to AI?** Find out in 60 seconds — free. No signup required.
 
 A free, open-source web tool that audits any website for **Generative Engine Optimisation (GEO)** readiness. It crawls up to 10 pages, runs 8 static signal analyzers, computes a **GEO Score out of 100**, and surfaces a prioritised list of actionable fixes.
