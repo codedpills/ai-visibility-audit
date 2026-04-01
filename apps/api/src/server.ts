@@ -52,9 +52,19 @@ export function buildServer(
   const monthlyLimit = parseInt(process.env.MONTHLY_AUDIT_LIMIT ?? '3', 10);
   const anonMonthlyLimit = parseInt(process.env.ANON_MONTHLY_LIMIT ?? '1', 10);
   const webBaseUrl = process.env.WEB_BASE_URL ?? 'http://localhost:5173';
+  // Support comma-separated list of allowed origins so both the custom domain
+  // (e.g. https://aivisibilityaudit.cc) and the Railway deploy URL work simultaneously.
+  const allowedOrigins = webBaseUrl.split(',').map((o) => o.trim());
 
   app.register(cors, {
-    origin: webBaseUrl,
+    origin: (origin, cb) => {
+      // Allow requests with no Origin header (e.g. server-to-server, curl)
+      if (!origin || allowedOrigins.includes(origin)) {
+        cb(null, true);
+      } else {
+        cb(new Error(`Origin ${origin} not allowed by CORS`), false);
+      }
+    },
     credentials: true,
   });
   app.register(cookie);
