@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import type { FastifyPluginAsync } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../types/database.js';
@@ -54,12 +55,30 @@ export const kofiRoute: FastifyPluginAsync<KofiRouteDeps> = async (
         return reply.status(400).send({ error: 'Invalid payload.' });
       }
 
-      if (payload.verification_token !== verificationToken) {
+      // Timing-safe token comparison to prevent timing-based enumeration
+      const expected = Buffer.from(verificationToken);
+      const received = Buffer.from(
+        typeof payload.verification_token === 'string'
+          ? payload.verification_token
+          : ''
+      );
+      const tokensMatch =
+        expected.length === received.length &&
+        timingSafeEqual(expected, received);
+      if (!tokensMatch) {
         return reply.status(400).send({ error: 'Invalid verification token.' });
       }
 
+      // Validate required fields
       const { email, amount } = payload;
-      const points = Math.floor(parseFloat(amount) || 0);
+      if (!email || typeof email !== 'string') {
+        return reply.status(400).send({ error: 'Invalid payload.' });
+      }
+      const parsedAmount = parseFloat(amount);
+      if (!isFinite(parsedAmount) || parsedAmount <= 0) {
+        return reply.status(400).send({ error: 'Invalid amount.' });
+      }
+      const points = Math.floor(parsedAmount);
 
       const user = await findUserByEmail(db, email);
       if (user && points > 0) {

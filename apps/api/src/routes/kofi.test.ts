@@ -119,4 +119,53 @@ describe('POST /webhooks/kofi', () => {
       5
     );
   });
+
+  it('returns 400 and does not call findUser when amount is NaN', async () => {
+    const app = await buildApp();
+    const body = encodeKofiData({
+      verification_token: VERIFICATION_TOKEN,
+      email: 'donor@example.com',
+      amount: 'NaN',
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/webhooks/kofi',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    expect(res.statusCode).toBe(400);
+    expect(mockFindUserByEmail).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 and does not call findUser when amount is negative', async () => {
+    const app = await buildApp();
+    const body = encodeKofiData({
+      verification_token: VERIFICATION_TOKEN,
+      email: 'donor@example.com',
+      amount: '-5.00',
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/webhooks/kofi',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    expect(res.statusCode).toBe(400);
+    expect(mockFindUserByEmail).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 when email field is missing', async () => {
+    const app = await buildApp();
+    const body = encodeKofiData({
+      verification_token: VERIFICATION_TOKEN,
+      amount: '5.00',
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/webhooks/kofi',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    expect(res.statusCode).toBe(400);
+  });
 });

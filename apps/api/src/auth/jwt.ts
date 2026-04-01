@@ -24,6 +24,8 @@ export async function verifyJwt(
   token: string,
   secret: string
 ): Promise<JwtPayload> {
-  const { payload } = await jwtVerify(token, secretKey(secret));
+  const { payload } = await jwtVerify(token, secretKey(secret), {
+    algorithms: ['HS256'],
+  });
   return payload as JwtPayload;
 }

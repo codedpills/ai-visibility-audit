@@ -1,6 +1,8 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
+import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import { healthRoute } from './routes/health.js';
 import { auditsRoute } from './routes/audits.js';
 import { emailRoute } from './routes/email.js';
@@ -45,10 +47,30 @@ export function buildServer(
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
     },
+    trustProxy: true,
   });
 
+  // Fail fast: JWT_SECRET must be set explicitly — no insecure default in production
+  const rawJwtSecret = process.env.JWT_SECRET;
+  if (!rawJwtSecret) {
+    throw new Error(
+      'JWT_SECRET environment variable is required but not set. ' +
+        'Set it to a strong random value (32+ chars).'
+    );
+  }
+  if (rawJwtSecret === 'dev-secret-change-in-production') {
+    app.log.warn(
+      'JWT_SECRET is set to the insecure default value. Change it in production.'
+    );
+  }
+
+  // Warn (not throw) for optional services — degraded mode is acceptable
+  if (!process.env.FIRECRAWL_API_KEY) {
+    app.log.warn('FIRECRAWL_API_KEY is not set — crawl jobs will fail');
+  }
+
   const auditQueue = createAuditQueue(redisClient);
-  const jwtSecret = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
+  const jwtSecret = rawJwtSecret;
   const monthlyLimit = parseInt(process.env.MONTHLY_AUDIT_LIMIT ?? '3', 10);
   const anonMonthlyLimit = parseInt(process.env.ANON_MONTHLY_LIMIT ?? '1', 10);
   const webBaseUrl = process.env.WEB_BASE_URL ?? 'http://localhost:5173';
@@ -68,6 +90,13 @@ export function buildServer(
       }
     },
     credentials: true,
+  });
+  // Security headers: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, etc.
+  app.register(helmet, { global: true });
+  // Rate limiting for auth and email endpoints — applied per-route below
+  app.register(rateLimit, {
+    global: false, // only apply where explicitly enabled
+    redis: redis as never, // share infrastructure when Redis is available
   });
   app.register(cookie);
   app.register(healthRoute);

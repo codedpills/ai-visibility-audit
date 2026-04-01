@@ -30,7 +30,9 @@ export const usersRoute: FastifyPluginAsync<UsersRouteDeps> = async (
 
     let userId: string;
     try {
-      const { payload } = await jwtVerify(token, secretKey);
+      const { payload } = await jwtVerify(token, secretKey, {
+        algorithms: ['HS256'],
+      });
       userId = (payload as { sub?: string }).sub ?? '';
       if (!userId) throw new Error('missing sub');
     } catch {

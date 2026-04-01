@@ -16,6 +16,8 @@
   "dependencies": {
     "@fastify/cookie": "^11.0.2",
     "@fastify/cors": "^10.0.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/rate-limit": "^10.3.0",
     "@mendable/firecrawl-js": "^4.17.0",
     "@repo/shared": "workspace:*",
     "bullmq": "^5.0.0",

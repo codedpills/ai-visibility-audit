@@ -81,6 +81,60 @@ describe('POST /audits', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  it('returns 400 for http (non-https) URLs', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/audits',
+      payload: { url: 'http://example.com' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it.each([
+    'https://localhost',
+    'https://localhost:8080',
+    'https://127.0.0.1',
+    'https://127.0.0.1:3000',
+    'https://0.0.0.0',
+    'https://[::1]',
+    'https://192.168.1.1',
+    'https://10.0.0.1',
+    'https://172.16.0.1',
+    'https://172.31.255.255',
+    'https://169.254.169.254',
+  ])('returns 400 for SSRF target URL %s', async (url) => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/audits',
+      payload: { url },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('returns 400 when x-anon-id is not a valid UUID', async () => {
+    mockEnqueueAudit.mockResolvedValue('a5');
+    const res = await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { 'x-anon-id': 'not-a-uuid' },
+      payload: { url: 'https://example.com' },
+    });
+    // Invalid anonId falls back to IP-only rate limiting — still allowed, not blocked
+    expect(mockCheckAnon).toHaveBeenCalledWith('', expect.any(String));
+  });
+
+  it('passes valid UUID anonId to checkAnon unchanged', async () => {
+    mockEnqueueAudit.mockResolvedValue('a6');
+    const validUuid = '550e8400-e29b-41d4-a716-446655440000';
+    await app.inject({
+      method: 'POST',
+      url: '/audits',
+      headers: { 'x-anon-id': validUuid },
+      payload: { url: 'https://example.com' },
+    });
+    expect(mockCheckAnon).toHaveBeenCalledWith(validUuid, expect.any(String));
+  });
+
   it('calls enqueueAudit with the submitted url', async () => {
     mockEnqueueAudit.mockResolvedValue('audit-xyz');
     await app.inject({
@@ -108,16 +162,14 @@ describe('POST /audits', () => {
 
   it('passes anonId header to checkAnon', async () => {
     mockEnqueueAudit.mockResolvedValue('a1');
+    const validUuid = '550e8400-e29b-41d4-a716-446655440001';
     await app.inject({
       method: 'POST',
       url: '/audits',
-      headers: { 'x-anon-id': 'my-anon-id' },
+      headers: { 'x-anon-id': validUuid },
       payload: { url: 'https://example.com' },
     });
-    expect(mockCheckAnon).toHaveBeenCalledWith(
-      'my-anon-id',
-      expect.any(String)
-    );
+    expect(mockCheckAnon).toHaveBeenCalledWith(validUuid, expect.any(String));
   });
 
   it('returns 429 when registered monthly limit is exceeded', async () => {

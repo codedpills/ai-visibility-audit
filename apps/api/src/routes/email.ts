@@ -42,6 +42,11 @@ export const emailRoute: FastifyPluginAsync<EmailRouteDeps> = async (
 
   fastify.post<{ Params: { id: string }; Body: { email?: string } }>(
     '/audits/:id/email',
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: '15 minutes' },
+      },
+    },
     async (request, reply) => {
       const { email } = request.body ?? {};
 

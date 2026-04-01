@@ -24,7 +24,42 @@ export interface AuditRouteDeps {
   incrementUserAuditCount: (userId: string) => Promise<void>;
 }
 
-const URL_RE = /^https?:\/\/.+\..+/;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// Private/reserved IP ranges that must not be crawled (SSRF prevention).
+// Covers loopback, link-local, RFC-1918, and the most common cloud metadata IP.
+const PRIVATE_IP_RE =
+  /^(127\.|0\.0\.0\.0|169\.254\.|10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/;
+
+/**
+ * Returns true if the URL is safe to crawl:
+ * - scheme must be https
+ * - hostname must not be localhost / loopback / private range
+ */
+function isSafeAuditUrl(raw: string): boolean {
+  let parsed: URL;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    return false;
+  }
+
+  if (parsed.protocol !== 'https:') return false;
+
+  const host = parsed.hostname.toLowerCase();
+
+  // Block loopback and IPv6 localhost
+  if (host === 'localhost' || host === '::1' || host === '[::1]') return false;
+
+  // Block private/reserved IPv4 ranges
+  if (PRIVATE_IP_RE.test(host)) return false;
+
+  // Require at least one dot (ruling out bare hostnames / single-label names)
+  if (!host.includes('.')) return false;
+
+  return true;
+}
 
 export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
   fastify,
@@ -45,10 +80,10 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
     async (request, reply) => {
       const { url } = request.body ?? {};
 
-      if (!url || !URL_RE.test(url)) {
+      if (!url || !isSafeAuditUrl(url)) {
         return reply
           .status(400)
-          .send({ error: 'A valid http/https url is required.' });
+          .send({ error: 'A valid https URL is required.' });
       }
 
       // Resolve the logged-in user for rate limiting and retention.
@@ -56,7 +91,9 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
       const token = request.cookies?.['session'];
       if (token) {
         try {
-          const { payload } = await jwtVerify(token, secretKey);
+          const { payload } = await jwtVerify(token, secretKey, {
+            algorithms: ['HS256'],
+          });
           userId = (payload as { sub?: string }).sub ?? null;
         } catch {
           // Invalid/expired token — treat as anonymous
@@ -73,12 +110,15 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
           });
         }
       } else {
-        const anonId = (request.headers['x-anon-id'] as string) ?? '';
+        // Only accept well-formed UUID anonIds — reject arbitrary strings to
+        // prevent crafted Redis key attacks. Fall back to IP-only on invalid.
+        const rawAnonId = (request.headers['x-anon-id'] as string) ?? '';
+        const anonId = UUID_RE.test(rawAnonId) ? rawAnonId : '';
         const ip = request.ip;
         const limit = await checkAnon(anonId, ip);
         if (!limit.allowed) {
           return reply.status(429).send({
-            error: 'Daily audit limit reached. Try again tomorrow.',
+            error: 'Monthly audit limit reached.',
             resetsAt: limit.resetsAt,
           });
         }
@@ -103,6 +143,11 @@ export const auditsRoute: FastifyPluginAsync<AuditRouteDeps> = async (
       if (!audit) {
         return reply.status(404).send({ error: 'Audit not found.' });
       }
+
+      // Prevent search engines from indexing individual audit result URLs.
+      // Audit UUIDs are capability URLs — they're not secret, but they should
+      // not be crawlable/indexable.
+      reply.header('X-Robots-Tag', 'noindex, nofollow');
 
       // Map snake_case DB columns to camelCase API response
       return reply.send({

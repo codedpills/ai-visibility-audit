@@ -51,6 +51,11 @@ export const authRoute: FastifyPluginAsync<AuthRouteDeps> = async (
 
   fastify.post<{ Body: { email?: string } }>(
     '/auth/magic-link',
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: '15 minutes' },
+      },
+    },
     async (req, reply) => {
       const { email } = req.body ?? {};
       if (!email || !EMAIL_RE.test(email)) {
@@ -74,6 +79,11 @@ export const authRoute: FastifyPluginAsync<AuthRouteDeps> = async (
 
   fastify.get<{ Querystring: { token?: string } }>(
     '/auth/verify',
+    {
+      config: {
+        rateLimit: { max: 10, timeWindow: '15 minutes' },
+      },
+    },
     async (req, reply) => {
       const { token } = req.query;
       if (!token) {
