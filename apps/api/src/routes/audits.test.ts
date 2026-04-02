@@ -113,7 +113,7 @@ describe('POST /audits', () => {
 
   it('returns 400 when x-anon-id is not a valid UUID', async () => {
     mockEnqueueAudit.mockResolvedValue('a5');
-    const res = await app.inject({
+    await app.inject({
       method: 'POST',
       url: '/audits',
       headers: { 'x-anon-id': 'not-a-uuid' },
