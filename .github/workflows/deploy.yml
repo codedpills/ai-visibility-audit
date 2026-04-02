@@ -1,7 +1,9 @@
 name: Deploy to Railway
 
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
 
 # These jobs run in parallel. Each deploys the full repo — Railway uses the
@@ -10,6 +12,7 @@ jobs:
   deploy-api:
     name: Deploy API
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout
@@ -26,6 +29,7 @@ jobs:
   deploy-web:
     name: Deploy Web
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout
