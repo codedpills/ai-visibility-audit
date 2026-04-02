@@ -34,6 +34,8 @@ export function CookieBanner() {
     const stored = getStoredConsent();
     if (stored === 'accepted') {
       posthog.opt_in_capturing();
+      // PageViewTracker fired while opted-out — send the missed initial pageview.
+      posthog.capture('$pageview', { $current_url: window.location.href });
     } else if (stored === 'declined') {
       posthog.opt_out_capturing();
     } else {
@@ -44,6 +46,8 @@ export function CookieBanner() {
   function handleAccept() {
     storeConsent('accepted');
     posthog.opt_in_capturing();
+    // Capture the page the user was on when they accepted.
+    posthog.capture('$pageview', { $current_url: window.location.href });
     setVisible(false);
   }
 
