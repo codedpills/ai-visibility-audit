@@ -4,6 +4,7 @@ import { submitAudit, getLimits } from '../api/client';
 import type { LimitsResponse } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
 import { colors, fonts } from '../design/tokens';
+import { posthog } from '../analytics/posthog';
 
 const HOW_IT_WORKS = [
   {
@@ -92,6 +93,10 @@ export function HomePage() {
     setLoading(true);
     try {
       const { auditId } = await submitAudit(normalised);
+      posthog.capture('audit_submitted', {
+        audit_url: normalised,
+        user_type: user ? 'registered' : 'anonymous',
+      });
       navigate(`/audits/${auditId}/progress`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');

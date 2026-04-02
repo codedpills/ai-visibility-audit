@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { getMe, logout as apiLogout, type MeResponse } from '../api/client';
+import { posthog } from '../analytics/posthog';
 
 interface AuthState {
   user: MeResponse | null;
@@ -25,6 +26,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const me = await getMe();
       setUser(me);
+      if (me) {
+        // Identify logged-in user in PostHog so all events are linked to them
+        posthog.identify(me.id, { email: me.email });
+      }
     } catch {
       setUser(null);
     } finally {
@@ -35,6 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     await apiLogout();
     setUser(null);
+    // Disassociate the PostHog session from this user on logout
+    posthog.reset();
   }, []);
 
   useEffect(() => {
