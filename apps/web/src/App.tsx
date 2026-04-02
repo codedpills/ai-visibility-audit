@@ -3,12 +3,14 @@ import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { PostHogProvider } from 'posthog-js/react';
 import { AuthProvider } from './auth/AuthContext';
 import { NavBar } from './components/NavBar';
+import { CookieBanner } from './components/CookieBanner';
 import { HomePage } from './pages/HomePage';
 import { AuditProgressPage } from './pages/AuditProgressPage';
 import { AuditResultsPage } from './pages/AuditResultsPage';
 import { LoginPage } from './pages/LoginPage';
 import { MagicLinkVerifyPage } from './pages/MagicLinkVerifyPage';
 import { MyAuditsPage } from './pages/MyAuditsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
 import { posthog } from './analytics/posthog';
 
 /**
@@ -40,7 +42,9 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/auth/verify" element={<MagicLinkVerifyPage />} />
             <Route path="/my-audits" element={<MyAuditsPage />} />
+            <Route path="/privacy" element={<PrivacyPolicyPage />} />
           </Routes>
+          <CookieBanner />
         </AuthProvider>
       </BrowserRouter>
     </PostHogProvider>

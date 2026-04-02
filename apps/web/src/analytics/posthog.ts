@@ -12,6 +12,10 @@ if (token && typeof window !== 'undefined') {
     // recorded correctly with the right URL.
     capture_pageview: false,
     persistence: 'localStorage',
+    // GDPR: opt out by default until the user gives consent via the cookie
+    // banner. CookieBanner calls posthog.opt_in_capturing() on accept and
+    // posthog.opt_out_capturing() on decline.
+    opt_out_capturing_by_default: true,
   });
 }
 

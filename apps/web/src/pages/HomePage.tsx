@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { submitAudit, getLimits } from '../api/client';
 import type { LimitsResponse } from '../api/client';
 import { useAuth } from '../auth/AuthContext';
@@ -238,6 +238,10 @@ export function HomePage() {
             >
               Request a feature
             </a>
+            {' · '}
+            <Link to="/privacy" style={s.footerLink}>
+              Privacy Policy
+            </Link>
           </p>
         </footer>
       </div>
