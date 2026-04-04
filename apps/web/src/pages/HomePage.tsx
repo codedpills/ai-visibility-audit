@@ -54,7 +54,7 @@ const FAQS = [
 
 export function HomePage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -97,6 +97,8 @@ export function HomePage() {
         audit_url: normalised,
         user_type: user ? 'registered' : 'anonymous',
       });
+      // Refresh auth state so NavBar shows the updated audit count.
+      await refresh();
       navigate(`/audits/${auditId}/progress`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong.');
