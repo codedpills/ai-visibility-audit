@@ -9,7 +9,7 @@ function extractDomain(url: string): string {
   return new URL(url).origin;
 }
 
-function extractSchemaOrg(html: string): Record<string, unknown>[] {
+export function extractSchemaOrg(html: string): Record<string, unknown>[] {
   const schemas: Record<string, unknown>[] = [];
   const regex =
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -109,7 +109,7 @@ export async function crawl(rootUrl: string): Promise<CrawlResult> {
   const crawlResult = await app.crawlUrl(rootUrl, {
     limit: MAX_PAGES,
     scrapeOptions: {
-      formats: ['markdown', 'html', 'links'],
+      formats: ['markdown', 'html', 'rawHtml', 'links'],
       onlyMainContent: false,
     },
   });
@@ -125,7 +125,10 @@ export async function crawl(rootUrl: string): Promise<CrawlResult> {
   const pages: CrawledPage[] = (crawlResult.data ?? []).map(
     (doc: FirecrawlDoc) => {
       const url = doc.metadata?.sourceURL ?? doc.url ?? rootUrl;
-      const html = doc.html ?? doc.rawHtml ?? '';
+      const html = doc.html ?? '';
+      // rawHtml preserves the full document including <head> scripts — needed
+      // for JSON-LD extraction. doc.html is cleaned body-only content.
+      const rawHtml = doc.rawHtml ?? doc.html ?? '';
       const markdown = doc.markdown ?? '';
       const origin = extractDomain(url);
       const { internal, external } = classifyLinks(doc.links ?? [], origin);
@@ -141,7 +144,7 @@ export async function crawl(rootUrl: string): Promise<CrawlResult> {
         paragraphs: extractParagraphs(markdown),
         internalLinks: [...new Set(internal)],
         externalLinks: [...new Set(external)],
-        schemaOrg: extractSchemaOrg(html),
+        schemaOrg: extractSchemaOrg(rawHtml),
         statusCode: doc.metadata?.statusCode ?? 200,
         responseTimeMs: 0,
       };
